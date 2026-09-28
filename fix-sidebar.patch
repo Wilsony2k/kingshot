@@ -1,0 +1,15 @@
+--- a/site/css/main.css
++++ b/site/css/main.css
+@@ -57,7 +57,7 @@
+ .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-width); background: var(--bg-secondary); border-right: 1px solid var(--border); z-index: 150; display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: visible; box-shadow: var(--shadow-lg); }
+ .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+-.sidebar.collapsed .sidebar-header { padding: 1.5rem 0.75rem; justify-content: center; flex-direction: column; gap: 0.5rem; position: relative; }
++.sidebar.collapsed .sidebar-header { padding: 1.5rem 0.5rem; justify-content: center; position: relative; }
+ .sidebar.collapsed .sidebar-brand { justify-content: center; }
+ .sidebar.collapsed .brand-text { display: none; }
+@@ -65,4 +65,4 @@
+ .sidebar.collapsed .sidebar-link span:not(.sidebar-icon) { display: none; }
+ .sidebar.collapsed .sidebar-footer .lang-name { display: none; }
+-.sidebar.collapsed .sidebar-collapse-btn { position: absolute; right: -20px; top: 16px; background: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 10; width: 40px; height: 40px; border-radius: 50%; transform: none; }
++.sidebar.collapsed .sidebar-collapse-btn { position: absolute; right: -18px; top: 18px; background: var(--accent); box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; width: 36px; height: 36px; border-radius: 50%; transform: none; }
+ .sidebar.collapsed .sidebar-collapse-btn svg { transform: rotate(180deg); }

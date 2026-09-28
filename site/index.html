@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingshot 王牌射手 資料庫 | 英雄、建築、攻略</title>
+  <meta name="description" content="Kingshot 王牌射手 完整資料庫：英雄數據、建築攻略、優惠碼、計算機">
+  <meta name="theme-color" content="#1a1a2e">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/css/main.css?v=3.0">
+  <link rel="stylesheet" href="/css/components.css?v=2.0">
+</head>
+<body>
+  <div id="app">
+    <!-- Header Navigation -->
+    <header class="header" id="header" role="banner">
+      <div class="header-container">
+        <a href="#home" class="header-brand" data-page="home" aria-label="回到首頁">
+          <span class="brand-icon">🏹</span>
+          <span class="brand-text">KINGSHOT Avengers</span>
+        </a>
+        
+        <nav class="header-nav" id="headerNav" aria-label="主要導航">
+          <ul class="header-nav-list" role="menubar">
+            <li role="none"><a href="#home" class="header-nav-link active" data-page="home" role="menuitem"><span class="nav-icon">🏠</span><span>首頁</span></a></li>
+            <li role="none"><a href="#heroes" class="header-nav-link" data-page="heroes" role="menuitem"><span class="nav-icon">⚔️</span><span>英雄圖鑑</span></a></li>
+            <li role="none"><a href="#buildings" class="header-nav-link" data-page="buildings" role="menuitem"><span class="nav-icon">🏗️</span><span>建築數據</span></a></li>
+            <li role="none"><a href="#pets" class="header-nav-link" data-page="pets" role="menuitem"><span class="nav-icon">🐾</span><span>寵物系統</span></a></li>
+            <li role="none"><a href="#guides" class="header-nav-link" data-page="guides" role="menuitem"><span class="nav-icon">📖</span><span>攻略指南</span></a></li>
+            <li role="none"><a href="#calculators" class="header-nav-link" data-page="calculators" role="menuitem"><span class="nav-icon">🧮</span><span>計算工具</span></a></li>
+            <li role="none"><a href="#coupons" class="header-nav-link" data-page="coupons" role="menuitem"><span class="nav-icon">🎁</span><span>優惠碼</span></a></li>
+            <li role="none"><a href="#avgdaily" class="header-nav-link" data-page="avgdaily" role="menuitem"><span class="nav-icon">📊</span><span>AVG DAILY</span></a></li>
+          </ul>
+        </nav>
+        
+        <div class="header-extras">
+          <div class="lang-selector">
+            <button class="lang-toggle" id="langToggle" aria-label="切換語言" aria-expanded="false" aria-haspopup="true">
+              <span class="lang-flag">🇹🇼</span>
+              <span class="lang-name">繁體中文</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="lang-menu" id="langMenu" role="menu"></div>
+          </div>
+          <button class="theme-toggle" id="themeToggle" aria-label="切換深色/淺色模式">
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="開啟選單" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+      <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
+      <nav class="mobile-drawer-content" aria-label="行動裝置選單">
+        <ul class="mobile-drawer-list">
+          <li><a href="#home" class="mobile-drawer-link active" data-page="home"><span class="nav-icon">🏠</span><span>首頁</span></a></li>
+          <li><a href="#heroes" class="mobile-drawer-link" data-page="heroes"><span class="nav-icon">⚔️</span><span>英雄圖鑑</span></a></li>
+          <li><a href="#buildings" class="mobile-drawer-link" data-page="buildings"><span class="nav-icon">🏗️</span><span>建築數據</span></a></li>
+          <li><a href="#pets" class="mobile-drawer-link" data-page="pets"><span class="nav-icon">🐾</span><span>寵物系統</span></a></li>
+          <li><a href="#guides" class="mobile-drawer-link" data-page="guides"><span class="nav-icon">📖</span><span>攻略指南</span></a></li>
+          <li><a href="#calculators" class="mobile-drawer-link" data-page="calculators"><span class="nav-icon">🧮</span><span>計算工具</span></a></li>
+          <li><a href="#coupons" class="mobile-drawer-link" data-page="coupons"><span class="nav-icon">🎁</span><span>優惠碼</span></a></li>
+          <li><a href="#avgdaily" class="mobile-drawer-link" data-page="avgdaily"><span class="nav-icon">📊</span><span>AVG DAILY</span></a></li>
+        </ul>
+        <div class="mobile-drawer-footer">
+          <div class="lang-selector">
+            <button class="lang-toggle" id="mobileLangToggle" aria-label="切換語言" aria-expanded="false" aria-haspopup="true">
+              <span class="lang-flag">🇹🇼</span>
+              <span class="lang-name">繁體中文</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="lang-menu" id="mobileLangMenu" role="menu"></div>
+          </div>
+          <button class="theme-toggle" id="mobileThemeToggle" aria-label="切換深色/淺色模式">
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Progress indicator -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Main content -->
+    <main id="mainContent">
+      <!-- Pages will be rendered here by JavaScript -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-info">
+          <p><strong>KINGSHOT Avengers 資料庫</strong></p>
+          <p class="meta">數據來源：kingshotdata.kr | 最後更新：<span id="lastUpdate"></span></p>
+        </div>
+        <div class="footer-links">
+          <a href="#home" class="footer-link">首頁</a>
+          <a href="#heroes" class="footer-link">英雄圖鑑</a>
+          <a href="#buildings" class="footer-link">建築數據</a>
+          <a href="#pets" class="footer-link">寵物系統</a>
+          <a href="#guides" class="footer-link">攻略指南</a>
+          <a href="#calculators" class="footer-link">計算工具</a>
+          <a href="#coupons" class="footer-link">優惠碼</a>
+          <a href="#avgdaily" class="footer-link">AVG DAILY</a>
+        </div>
+        <div class="footer-disclaimer">
+          ⚠️ 這是非官方粉絲網站，所有遊戲圖片和數據版權歸 Century Games 所有。
+        </div>
+      </div>
+    </footer>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="/js/main.js?v=3.0"></script>
+</body>
+</html>

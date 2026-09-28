@@ -1,0 +1,10 @@
+# Cloudflare Tunnel Configuration for kingshot.85200852.xyz
+tunnel: kingshot-tunnel
+credentials-file: ~/.cloudflared/credentials.json
+
+ingress:
+  - hostname: kingshot.85200852.xyz
+    service: http://localhost:8080
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404

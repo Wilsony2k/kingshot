@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Kingshot Server 2355 專屬活動月曆/週曆 - 含最強領主第4期(第3期替代)、資源預算、每日 Must Do">
+  <title>Server 2355 | Kingshot 活動日曆</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="server-2355-calendar.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="header-title">
+          <h1>🦊 Server 2355 活動日曆</h1>
+          <div class="subtitle">Kingshot 官方 4 週循環對齊版 · 最強領主第 4 期(第 3 期替代) · Day 59 基準 (2025-09-19)</div>
+        </div>
+        <div class="header-controls">
+          <div class="view-toggle" role="tablist" aria-label="視圖切換">
+            <button class="btn btn-sm active" role="tab" aria-selected="true" data-view="month" id="view-month">
+              <span class="btn-icon">📅</span> 月曆
+            </button>
+            <button class="btn btn-sm" role="tab" aria-selected="false" data-view="week" id="view-week">
+              <span class="btn-icon">📆</span> 週曆
+            </button>
+          </div>
+          <button class="theme-toggle" id="theme-toggle" aria-label="切換深色/淺色模式" title="切換主題">
+            <span id="theme-icon">🌙</span>
+          </button>
+          <button class="btn btn-primary" id="resource-panel-btn">
+            <span class="btn-icon">🎒</span> 資源預算
+          </button>
+          <button class="btn btn-secondary" id="export-btn">
+            <span class="btn-icon">📥</span> 匯出 CSV
+          </button>
+          <button class="btn btn-secondary" id="print-btn">
+            <span class="btn-icon">🖨️</span> 列印
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Legend -->
+    <div class="legend" id="legend" role="navigation" aria-label="活動圖例">
+      <!-- 動態生成 -->
+    </div>
+
+    <!-- Calendar Container -->
+    <div class="calendar-container" id="calendar-container">
+      <!-- Month View -->
+      <div class="month-view" id="month-view" role="region" aria-label="月曆視圖">
+        <div class="month-header">
+          <h2 class="month-title" id="month-title"></h2>
+          <div class="month-nav">
+            <button class="btn btn-secondary btn-sm" id="prev-month" aria-label="上個月">‹</button>
+            <button class="btn btn-secondary btn-sm" id="next-month" aria-label="下個月">›</button>
+            <button class="btn btn-primary btn-sm" id="today-btn">今天</button>
+          </div>
+        </div>
+        <div class="weekday-row" role="row">
+          <div class="weekday-cell" role="columnheader">一</div>
+          <div class="weekday-cell" role="columnheader">二</div>
+          <div class="weekday-cell" role="columnheader">三</div>
+          <div class="weekday-cell" role="columnheader">四</div>
+          <div class="weekday-cell" role="columnheader">五</div>
+          <div class="weekday-cell" role="columnheader">六</div>
+          <div class="weekday-cell" role="columnheader">日</div>
+        </div>
+        <div class="month-grid" id="month-grid" role="grid">
+          <!-- 動態生成 -->
+        </div>
+      </div>
+
+      <!-- Week View -->
+      <div class="week-view" id="week-view" role="region" aria-label="週曆視圖" style="display: none;">
+        <div class="week-header" role="row">
+          <div class="week-header-cell" role="columnheader">時間/事件</div>
+          <div class="week-header-cell" role="columnheader" id="wh-0"></div>
+          <div class="week-header-cell" role="columnheader" id="wh-1"></div>
+          <div class="week-header-cell" role="columnheader" id="wh-2"></div>
+          <div class="week-header-cell" role="columnheader" id="wh-3"></div>
+          <div class="week-header-cell" role="columnheader" id="wh-4"></div>
+          <div class="week-header-cell" role="columnheader" id="wh-5"></div>
+          <div class="week-header-cell" role="columnheader" id="wh-6"></div>
+        </div>
+        <div class="week-grid" id="week-grid" role="grid">
+          <!-- 動態生成 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div>📊 資料來源：官方 4 週循環日曆 + Kingshot 評分表 + Evelyn 🦊 攻略庫</div>
+      <div>🔄 最後更新：2025-09-19 | 伺服器齡 Day 59 基準 | 最強領主第 4 期以第 3 期資料替代</div>
+      <div class="footer-links">
+        <a href="https://kingshot.net/kingdom-timeline" target="_blank">官方時間線</a>
+        <a href="https://kingshotoptimizer.com/kingdom-timeline/2355" target="_blank">Optimizer 2355</a>
+        <a href="#" id="open-changelog">更新日誌</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Resource Panel -->
+  <aside class="resource-panel" id="resource-panel" role="dialog" aria-label="資源預算面板" aria-hidden="true">
+    <div class="resource-panel-header">
+      <span>🎒 資源預算編輯</span>
+      <button class="btn btn-secondary btn-sm" id="close-resource-panel">關閉</button>
+    </div>
+    <div class="resource-panel-body">
+      <div class="resource-sync-status" id="sync-status">💾 本地儲存 · 自動同步</div>
+      <div id="resource-inputs">
+        <!-- 動態生成 -->
+      </div>
+    </div>
+    <div class="resource-panel-footer">
+      <button class="btn btn-secondary btn-sm" id="reset-resources">重置預設</button>
+      <button class="btn btn-primary btn-sm" id="save-resources">儲存並套用</button>
+    </div>
+  </aside>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">
+          <span class="icon" id="modal-icon"></span>
+          <div>
+            <h2 id="modal-event-name"></h2>
+            <div class="server-day" id="modal-server-day"></div>
+          </div>
+        </div>
+        <button class="modal-close" id="modal-close" aria-label="關閉詳情">×</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- 動態生成 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="server-2355-calendar.js"></script>
+  <script>
+/**
+ * Server 2355 Calendar - Main Application Logic
+ * 處理視圖渲染、互動、資源管理、本地儲存
+ */
+
+// 全域狀態
+let currentView = 'month';
+let currentMonth = new Date('2025-09-01'); // 從 9 月開始
+let currentWeekIndex = 1; // Week 2 (09/21-09/27) 為預設核心週
+let resourceBudget = { ...DEFAULT_RESOURCE_BUDGET };
+let selectedDayData = null;
+
+// DOM 元素快取
+const els = {
+  monthView: document.getElementById('month-view'),
+  weekView: document.getElementById('week-view'),
+  monthGrid: document.getElementById('month-grid'),
+  monthTitle: document.getElementById('month-title'),
+  weekGrid: document.getElementById('week-grid'),
+  weekHeaderCells: [],
+  viewMonthBtn: document.getElementById('view-month'),
+  viewWeekBtn: document.getElementById('view-week'),
+  prevMonthBtn: document.getElementById('prev-month'),
+  nextMonthBtn: document.getElementById('next-month'),
+  todayBtn: document.getElementById('today-btn'),
+  themeToggle: document.getElementById('theme-toggle'),
+  themeIcon: document.getElementById('theme-icon'),
+  resourcePanelBtn: document.getElementById('resource-panel-btn'),
+  resourcePanel: document.getElementById('resource-panel'),
+  closeResourcePanel: document.getElementById('close-resource-panel'),
+  resourceInputs: document.getElementById('resource-inputs'),
+  resetResourcesBtn: document.getElementById('reset-resources'),
+  saveResourcesBtn: document.getElementById('save-resources'),
+  exportBtn: document.getElementById('export-btn'),
+  printBtn: document.getElementById('print-btn'),
+  modalOverlay: document.getElementById('modal-overlay'),
+  modal: document.getElementById('modal'),
+  modalClose: document.getElementById('modal-close'),
+  modalIcon: document.getElementById('modal-icon'),
+  modalEventName: document.getElementById('modal-event-name'),
+  modalServerDay: document.getElementById('modal-server-day'),
+  modalBody: document.getElementById('modal-body'),
+  legend: document.getElementById('legend'),
+  syncStatus: document.getElementById('sync-status')
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+  loadResourceBudget();
+  renderLegend();
+  renderResourceInputs();
+  syncResourcePanel();
+  initEventListeners();
+  updateView();
+  updateWeekHeader();
+  detectTodayWeek();
+});
+
+// 事件監聽器
+function initEventListeners() {
+  // 視圖切換
+  els.viewMonthBtn.addEventListener('click', () => switchView('month'));
+  els.viewWeekBtn.addEventListener('click', () => switchView('week'));
+
+  // 月曆導航
+  els.prevMonthBtn.addEventListener('click', () => navigateMonth(-1));
+  els.nextMonthBtn.addEventListener('click', () => navigateMonth(1));
+  els.todayBtn.addEventListener('click', () => goToToday());
+
+  // 主題切換
+  els.themeToggle.addEventListener('click', toggleTheme);
+
+  // 資源面板
+  els.resourcePanelBtn.addEventListener('click', () => toggleResourcePanel(true));
+  els.closeResourcePanel.addEventListener('click', () => toggleResourcePanel(false));
+  els.resetResourcesBtn.addEventListener('click', resetResources);
+  els.saveResourcesBtn.addEventListener('click', saveResources);
+
+  // 匯出/列印
+  els.exportBtn.addEventListener('click', exportCSV);
+  els.printBtn.addEventListener('click', () => window.print());
+
+  // Modal
+  els.modalClose.addEventListener('click', closeModal);
+  els.modalOverlay.addEventListener('click', (e) => {
+    if (e.target === els.modalOverlay) closeModal();
+  });
+
+  // 鍵盤快捷鍵
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowLeft' && currentView === 'month') navigateMonth(-1);
+    if (e.key === 'ArrowRight' && currentView === 'month') navigateMonth(1);
+    if (e.key === 'ArrowUp' && currentView === 'week') navigateWeek(-1);
+    if (e.key === 'ArrowDown' && currentView === 'week') navigateWeek(1);
+    if (e.key === 't' || e.key === 'T') goToToday();
+    if (e.key === 'r' || e.key === 'R') toggleResourcePanel(true);
+  });
+
+  // 點擊外部關閉 resource panel
+  document.addEventListener('click', (e) => {
+    if (!els.resourcePanel.contains(e.target) && !els.resourcePanelBtn.contains(e.target)) {
+      toggleResourcePanel(false);
+    }
+  });
+}
+
+// ========== 視圖管理 ==========
+function switchView(view) {
+  currentView = view;
+  els.monthView.style.display = view === 'month' ? 'block' : 'none';
+  els.weekView.style.display = view === 'week' ? 'block' : 'none';
+  els.viewMonthBtn.classList.toggle('active', view === 'month');
+  els.viewMonthBtn.setAttribute('aria-selected', view === 'month');
+  els.viewWeekBtn.classList.toggle('active', view === 'week');
+  els.viewWeekBtn.setAttribute('aria-selected', view === 'week');
+  updateView();
+}
+
+function updateView() {
+  if (currentView === 'month') {
+    renderMonthView();
+  } else {
+    renderWeekView();
+  }
+}
+
+function navigateMonth(delta) {
+  currentMonth.setMonth(currentMonth.getMonth() + delta);
+  renderMonthView();
+}
+
+function navigateWeek(delta) {
+  currentWeekIndex = Math.max(0, Math.min(WEEKS_DATA.length - 1, currentWeekIndex + delta));
+  renderWeekView();
+  updateWeekHeader();
+}
+
+function goToToday() {
+  const today = new Date().toISOString().split('T')[0];
+  const dayData = getDayByDate(today);
+  if (dayData) {
+    // 切換到包含今天的週
+    for (let i = 0; i < WEEKS_DATA.length; i++) {
+      if (today >= WEEKS_DATA[i].startDate && today <= WEEKS_DATA[i].endDate) {
+        currentWeekIndex = i;
+        break;
+      }
+    }
+    switchView('week');
+    renderWeekView();
+    updateWeekHeader();
+    // 滾動到今天的欄位
+    setTimeout(() => scrollToTodayColumn(), 100);
+  } else {
+    // 如果今天不在資料範圍，切換到月視圖並跳轉到今天所在月
+    currentMonth = new Date(today);
+    currentMonth.setDate(1);
+    switchView('month');
+    renderMonthView();
+  }
+}
+
+function detectTodayWeek() {
+  const today = new Date().toISOString().split('T')[0];
+  for (let i = 0; i < WEEKS_DATA.length; i++) {
+    if (today >= WEEKS_DATA[i].startDate && today <= WEEKS_DATA[i].endDate) {
+      currentWeekIndex = i;
+      break;
+    }
+  }
+}
+
+function scrollToTodayColumn() {
+  const today = new Date().toISOString().split('T')[0];
+  const dayIndex = new Date(today).getDay(); // 0=Sun, 1=Mon...
+  const colIndex = dayIndex === 0 ? 6 : dayIndex - 1; // 轉換為 0=Mon...6=Sun
+  const column = document.querySelectorAll('.week-day-column')[colIndex];
+  if (column) {
+    column.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+  }
+}
+
+// ========== 月曆渲染 ==========
+function renderMonthView() {
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+
+  // 更新標題
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  els.monthTitle.textContent = `${year}年 ${monthNames[month]}`;
+
+  // 計算第一天是週幾 (0=Sun, 1=Mon...)
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDayOfWeek = firstDay.getDay(); // 0=Sun
+  const daysInMonth = lastDay.getDate();
+
+  // 轉換為 0=Mon 起始
+  const startOffset = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+  // 上個月尾巴
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+  let html = '';
+
+  // 填充上個月
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const day = prevMonthLastDay - i;
+    const date = new Date(year, month - 1, day);
+    const dateStr = date.toISOString().split('T')[0];
+    html += renderMonthDayCell(dateStr, day, true);
+  }
+
+  // 當月
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateStr = date.toISOString().split('T')[0];
+    html += renderMonthDayCell(dateStr, day, false);
+  }
+
+  // 下個月開頭 (補滿 6 週 = 42 格)
+  const totalCells = startOffset + daysInMonth;
+  const nextMonthDays = Math.ceil(totalCells / 7) * 7 - totalCells;
+  for (let day = 1; day <= nextMonthDays; day++) {
+    const date = new Date(year, month + 1, day);
+    const dateStr = date.toISOString().split('T')[0];
+    html += renderMonthDayCell(dateStr, day, true);
+  }
+
+  els.monthGrid.innerHTML = html;
+
+  // 綁定點擊事件
+  document.querySelectorAll('.month-day:not(.empty)').forEach(cell => {
+    cell.addEventListener('click', () => openModal(cell.dataset.date));
+  });
+}
+
+function renderMonthDayCell(dateStr, dayNum, isOtherMonth) {
+  const dayData = getDayByDate(dateStr);
+  const today = new Date().toISOString().split('T')[0];
+  const isToday = dateStr === today;
+  const isEmpty = !dayData && isOtherMonth;
+
+  if (isEmpty) {
+    return `<div class="month-day empty" data-date="${dateStr}"><div class="day-number">${dayNum}</div></div>`;
+  }
+
+  let classes = 'month-day';
+  if (isToday) classes += ' today';
+  if (dayData?.strongestLordDay) classes += ' strongest-lord';
+
+  let eventsHtml = '';
+  if (dayData && dayData.events.length > 0) {
+    const displayEvents = dayData.events.slice(0, 4);
+    eventsHtml = displayEvents.map(ev => {
+      const info = getEventTypeInfo(ev.id);
+      return `<span class="event-chip" style="background: ${info.color}22; color: ${info.color}; border: 1px solid ${info.color}44;">
+        <span class="icon">${info.icon}</span>${info.label}${ev.day ? ` D${ev.day}` : ''}
+      </span>`;
+    }).join('');
+    if (dayData.events.length > 4) {
+      eventsHtml += `<span class="more-events">+${dayData.events.length - 4} 個</span>`;
+    }
+  }
+
+  let slBadge = '';
+  if (dayData?.strongestLordDay) {
+    slBadge = `<span class="sl-badge">SL Day ${dayData.strongestLordDay}</span>`;
+  }
+
+  const serverDayBadge = dayData ? `<span class="server-day-badge">Day ${dayData.serverDay}</span>` : '';
+
+  return `
+    <div class="${classes}" data-date="${dateStr}" role="gridcell" tabindex="0" aria-label="${dateStr}${dayData ? ' · ' + dayData.events.map(e => getEventTypeInfo(e.id).label).join(', ') : ''}">
+      <div class="day-number">${dayNum}${serverDayBadge}</div>
+      ${slBadge}
+      <div class="day-events">${eventsHtml}</div>
+    </div>
+  `;
+}
+
+// ========== 週曆渲染 ==========
+function renderWeekView() {
+  const week = WEEKS_DATA[currentWeekIndex];
+  if (!week) return;
+
+  // 更新週標題列
+  week.days.forEach((day, idx) => {
+    const headerCell = document.getElementById(`wh-${idx}`);
+    if (headerCell) {
+      const date = new Date(day.date);
+      const weekdayNames = ['一','二','三','四','五','六','日'];
+      headerCell.innerHTML = `
+        <div class="week-day-date">${date.getDate()}</div>
+        <div class="week-day-server">Day ${day.serverDay}</div>
+        ${day.isToday ? '<span style="color:var(--today-ring);font-size:0.7rem;">● 今日</span>' : ''}
+        ${day.strongestLordDay ? `<span class="sl-badge" style="margin-top:4px;">SL Day ${day.strongestLordDay}</span>` : ''}
+      `;
+      headerCell.className = 'week-header-cell';
+      if (day.isToday) headerCell.classList.add('today');
+      if (day.strongestLordDay) headerCell.classList.add('strongest-lord');
+    }
+  });
+
+  // 渲染時間軸 + 事件欄
+  const timeSlots = [
+    '00:00-04:00', '04:00-08:00', '08:00-12:00',
+    '12:00-16:00', '16:00-20:00', '20:00-24:00'
+  ];
+
+  let html = '';
+  timeSlots.forEach((slot, slotIdx) => {
+    html += `<div class="time-label" style="--slot-index:${slotIdx};">${slot}</div>`;
+    week.days.forEach((day, dayIdx) => {
+      const isFirstSlot = slotIdx === 0;
+      const colClass = `week-day-column${day.isToday ? ' today' : ''}${day.strongestLordDay ? ' strongest-lord' : ''}`;
+      const headerHtml = isFirstSlot ? `
+        <div class="week-day-header${day.isToday ? ' today' : ''}${day.strongestLordDay ? ' strongest-lord' : ''}">
+          <div class="week-day-date">${new Date(day.date).getDate()}</div>
+          <div class="week-day-server">Day ${day.serverDay}</div>
+          ${day.isToday ? '<span style="color:var(--today-ring);font-size:0.65rem;">● 今日</span>' : ''}
+          ${day.strongestLordDay ? `<span class="sl-badge" style="margin-top:4px;">SL Day ${day.strongestLordDay}</span>` : ''}
+        </div>
+      ` : '';
+
+      let eventsHtml = '';
+      if (day.events.length > 0) {
+        eventsHtml = day.events.map(ev => renderWeekEventCard(ev, day)).join('');
+      }
+
+      // 強勢領主每日任務
+      let slTasksHtml = '';
+      if (day.strongestLordDay) {
+        const slInfo = getStrongestLordDayInfo(day.strongestLordDay);
+        if (slInfo) {
+          slTasksHtml = slInfo.mainTasks.map(task => `
+            <div class="week-task ${task.must ? 'must' : 'should'}">
+              <span class="week-task-icon">${task.must ? '🔴' : '🟡'}</span>
+              <div class="week-task-text">${task.task}</div>
+              ${task.score ? `<span class="week-task-score">${task.score}</span>` : ''}
+            </div>
+          `).join('');
+        }
+      }
+
+      html += `
+        <div class="${colClass}" data-date="${day.date}" data-day-index="${dayIdx}">
+          ${headerHtml}
+          <div class="week-day-events">
+            ${eventsHtml}
+            ${slTasksHtml}
+            ${day.notes ? `<div class="week-day-notes"><strong>備註：</strong>${day.notes}</div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+  });
+
+  els.weekGrid.innerHTML = html;
+
+  // 綁定事件卡片點擊
+  document.querySelectorAll('.week-event-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const date = card.closest('.week-day-column').dataset.date;
+      const eventId = card.dataset.eventId;
+      openModal(date, eventId);
+    });
+  });
+
+  // 綁定 SL 任務點擊
+  document.querySelectorAll('.week-task').forEach(task => {
+    task.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const date = task.closest('.week-day-column').dataset.date;
+      openModal(date, 'strongest-lord');
+    });
+  });
+
+  // 綁定日期欄點擊（開啟當日總覽）
+  document.querySelectorAll('.week-day-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('.sl-badge')) return;
+      const date = header.closest('.week-day-column').dataset.date;
+      openModal(date);
+    });
+  });
+}
+
+function renderWeekEventCard(ev, dayData) {
+  const info = getEventTypeInfo(ev.id);
+  const isSL = ev.id === 'strongest-lord' || ev.id === 'strongest-governor' || ev.id === 'governor-gear-enhancement';
+  return `
+    <div class="week-event-card${isSL ? ' strongest-lord' : ''}" data-event-id="${ev.id}" data-date="${dayData.date}" tabindex="0" role="button" aria-label="${info.label} 第 ${ev.day} 天">
+      <div class="week-event-header">
+        <span class="week-event-icon">${info.icon}</span>
+        <span class="week-event-name">${info.label}${ev.day ? ` 第 ${ev.day} 天` : ''}</span>
+        <span class="week-event-day">優先級 ${info.priority}</span>
+      </div>
+    </div>
+  `;
+}
+
+function updateWeekHeader() {
+  const week = WEEKS_DATA[currentWeekIndex];
+  if (week) {
+    // 更新週視圖的標題資訊（可在 header 顯示）
+  }
+}
+
+// ========== 圖例渲染 ==========
+function renderLegend() {
+  // 收集所有在資料中出現的事件類型
+  const usedTypes = new Set();
+  WEEKS_DATA.forEach(week => {
+    week.days.forEach(day => {
+      day.events.forEach(ev => usedTypes.add(ev.id));
+      if (day.strongestLordDay) usedTypes.add('strongest-lord');
+    });
+  });
+
+  // 按優先級排序
+  const sortedTypes = Array.from(usedTypes).sort((a, b) => {
+    const pa = EVENT_TYPES[a]?.priority || 99;
+    const pb = EVENT_TYPES[b]?.priority || 99;
+    return pa - pb;
+  });
+
+  els.legend.innerHTML = sortedTypes.map(type => {
+    const info = getEventTypeInfo(type);
+    return `
+      <span class="legend-item" style="background: ${info.color}22; color: ${info.color}; border: 1px solid ${info.color}44;">
+        <span class="legend-dot" style="background: ${info.color};"></span>
+        ${info.icon} ${info.label}
+      </span>
+    `;
+  }).join('');
+}
+
+// ========== Modal 詳情 ==========
+function openModal(dateStr, focusEventId = null) {
+  selectedDayData = getDayByDate(dateStr);
+  if (!selectedDayData) return;
+
+  const dayData = selectedDayData;
+  const date = new Date(dateStr);
+  const weekdayNames = ['週日','週一','週二','週三','週四','週五','週六'];
+
+  // 設定標題
+  const primaryEvent = dayData.events[0];
+  const primaryInfo = primaryEvent ? getEventTypeInfo(primaryEvent.id) : { icon: '📅', label: '無活動' };
+
+  els.modalIcon.textContent = primaryInfo.icon;
+  els.modalEventName.textContent = `${date.getMonth()+1}/${date.getDate()} (${weekdayNames[date.getDay()]}) ${primaryInfo.label}${primaryEvent?.day ? ` Day ${primaryEvent.day}` : ''}`;
+  els.modalServerDay.textContent = `伺服器齡 Day ${dayData.serverDay} ${dayData.isToday ? '· 今日' : ''}${dayData.strongestLordDay ? ` · 最強領主 Day ${dayData.strongestLordDay}` : ''}`;
+
+  // 渲染內容
+  let html = '';
+
+  // 並行事件
+  if (dayData.events.length > 0) {
+    html += `
+      <section class="modal-section">
+        <h3>📅 並行活動 (${dayData.events.length})</h3>
+        <div class="task-list">
+          ${dayData.events.map(ev => {
+            const info = getEventTypeInfo(ev.id);
+            return `
+              <div class="modal-task" data-event-id="${ev.id}" style="border-left-color: ${info.color};">
+                <span class="modal-task-icon">${info.icon}</span>
+                <div class="modal-task-content">
+                  <div class="modal-task-title">${info.label}${ev.day ? ` · 第 ${ev.day} 天` : ''}</div>
+                  <div class="modal-task-meta">
+                    <span class="modal-task-tag" style="background: ${info.color}22; color: ${info.color};">優先級 ${info.priority}</span>
+                    <span class="modal-task-tag score">Server Day ${dayData.serverDay}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  // 最強領主每日詳情
+  if (dayData.strongestLordDay) {
+    const slInfo = getStrongestLordDayInfo(dayData.strongestLordDay);
+    if (slInfo) {
+      html += `
+        <section class="modal-section">
+          <h3>👑 最強領主 Day ${dayData.strongestLordDay} · ${slInfo.theme}</h3>
+          <div class="task-list">
+            ${slInfo.mainTasks.map(task => `
+              <div class="modal-task ${task.must ? 'must' : 'should'}">
+                <span class="modal-task-icon">${task.must ? '🔴' : '🟡'}</span>
+                <div class="modal-task-content">
+                  <div class="modal-task-title">${task.task}</div>
+                  <div class="modal-task-meta">
+                    ${task.score ? `<span class="modal-task-tag score">單位分數: ${task.score}</span>` : ''}
+                    ${task.roi ? `<span class="modal-task-tag roi">ROI: ${task.roi}</span>` : ''}
+                    ${task.must ? `<span class="modal-task-tag must-tag">Must Do</span>` : `<span class="modal-task-tag" style="background:#fff3cd;color:#856404;">Should Do</span>`}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `;
+
+      // 關鍵資源
+      html += `
+        <section class="modal-section">
+          <h3>🎒 關鍵資源分配</h3>
+          <div class="resources-grid">
+            ${slInfo.keyResources.map(r => `
+              <div class="resource-card spend">
+                <div class="resource-icon">📤</div>
+                <div class="resource-name">消耗</div>
+                <div class="resource-value">${r}</div>
+              </div>
+            `).join('')}
+            ${slInfo.saveResources.map(r => `
+              <div class="resource-card save">
+                <div class="resource-icon">🔒</div>
+                <div class="resource-name">保留</div>
+                <div class="resource-value">${r}</div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `;
+    }
+  }
+
+  // 當日備註
+  if (dayData.notes) {
+    html += `
+      <section class="modal-section">
+        <h3>📝 策略備註</h3>
+        <div class="notes-box">${dayData.notes}</div>
+      </section>
+    `;
+  }
+
+  // 資源預算摘要
+  html += `
+    <section class="modal-section">
+      <h3>💰 你的資源預算 (可在右下角面板編輯)</h3>
+      <div class="resources-grid">
+        <div class="resource-card spend">
+          <div class="resource-icon">🎯</div>
+          <div class="resource-name">轉盤幣/幸運幣</div>
+          <div class="resource-value">${resourceBudget.spinCoins || '未填'}</div>
+        </div>
+        <div class="resource-card spend">
+          <div class="resource-icon">⭐</div>
+          <div class="resource-name">傳說信物</div>
+          <div class="resource-value">${resourceBudget.legendaryTokens || '未填'}</div>
+        </div>
+        <div class="resource-card spend">
+          <div class="resource-icon">💎</div>
+          <div class="resource-name">鑽石</div>
+          <div class="resource-value">${resourceBudget.diamonds || '未填'} 萬</div>
+        </div>
+        <div class="resource-card spend">
+          <div class="resource-icon">🔨</div>
+          <div class="resource-name">鍛造錘</div>
+          <div class="resource-value">${resourceBudget.heroForgeHammers || '未填'}</div>
+        </div>
+        <div class="resource-card spend">
+          <div class="resource-icon">⚙️</div>
+          <div class="resource-name">專屬組件</div>
+          <div class="resource-value">${resourceBudget.heroExclusiveParts || '未填'}</div>
+        </div>
+        <div class="resource-card spend">
+          <div class="resource-icon">⚡</div>
+          <div class="resource-name">加速(萬分)</div>
+          <div class="resource-value">${resourceBudget.speedups || '未填'}</div>
+        </div>
+        <div class="resource-card save">
+          <div class="resource-icon">🐾</div>
+          <div class="resource-name">高級印記</div>
+          <div class="resource-value">${resourceBudget.advancedTamingMarks || '未填'}</div>
+        </div>
+        <div class="resource-card save">
+          <div class="resource-icon">💠</div>
+          <div class="resource-name">秘銀</div>
+          <div class="resource-value">${resourceBudget.mithril || '未填'} 萬</div>
+        </div>
+      </div>
+    </section>
+  `;
+
+  els.modalBody.innerHTML = html;
+  els.modalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // 綁定 modal 內任務點擊（可展開細節）
+  document.querySelectorAll('.modal-task[data-event-id]').forEach(task => {
+    task.addEventListener('click', () => {
+      const eventId = task.dataset.eventId;
+      // 可擴展：顯示該活動的詳細攻略連結
+    });
+  });
+}
+
+function closeModal() {
+  els.modalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+  selectedDayData = null;
+}
+
+// ========== 資源面板 ==========
+function renderResourceInputs() {
+  const fields = [
+    { key: 'spinCoins', label: '轉盤幣/幸運幣', icon: '🎯', type: 'number', min: 0 },
+    { key: 'legendaryTokens', label: '傳說英雄信物', icon: '⭐', type: 'number', min: 0 },
+    { key: 'epicTokens', label: '史詩英雄信物', icon: '🌟', type: 'number', min: 0 },
+    { key: 'rareTokens', label: '稀有英雄信物', icon: '✨', type: 'number', min: 0 },
+    { key: 'advancedTamingMarks', label: '高級馴化印記 (🔴禁用)', icon: '🐾', type: 'number', min: 0 },
+    { key: 'normalTamingMarks', label: '普通馴化印記', icon: '🍃', type: 'number', min: 0 },
+    { key: 'heroExclusiveParts', label: '英雄專屬裝備組件', icon: '⚙️', type: 'number', min: 0 },
+    { key: 'heroForgeHammers', label: '英雄裝備鍛造錘', icon: '🔨', type: 'number', min: 0 },
+    { key: 'mithril', label: '秘銀 (萬)', icon: '💠', type: 'number', min: 0, step: 0.1 },
+    { key: 'speedups', label: '加速道具 (萬分鐘)', icon: '⚡', type: 'number', min: 0, step: 0.1 },
+    { key: 'diamonds', label: '鑽石 (萬)', icon: '💎', type: 'number', min: 0, step: 0.1 }
+  ];
+
+  els.resourceInputs.innerHTML = fields.map(f => `
+    <div class="resource-input-group">
+      <label class="resource-input-label">
+        <span>${f.icon} ${f.label}</span>
+      </label>
+      <input type="${f.type}" class="resource-input" id="res-${f.key}" 
+        value="${resourceBudget[f.key] || ''}" min="${f.min || 0}" step="${f.step || 1}"
+        placeholder="點擊輸入" aria-label="${f.label}">
+    </div>
+  `).join('');
+
+  // 綁定輸入事件
+  fields.forEach(f => {
+    const input = document.getElementById(`res-${f.key}`);
+    if (input) {
+      input.addEventListener('change', () => {
+        resourceBudget[f.key] = f.type === 'number' && f.step ? parseFloat(input.value) || 0 : parseInt(input.value) || 0;
+        syncResourcePanel();
+      });
+    }
+  });
+}
+
+function toggleResourcePanel(open) {
+  els.resourcePanel.classList.toggle('open', open);
+  els.resourcePanel.setAttribute('aria-hidden', !open);
+  if (open) {
+    els.syncStatus.textContent = '💾 本地儲存 · 自動同步';
+  }
+}
+
+function syncResourcePanel() {
+  // 更新同步狀態顯示
+  const hasData = Object.values(resourceBudget).some(v => v > 0);
+  els.syncStatus.textContent = hasData ? '✅ 已載入自訂資源 · 本地儲存' : '💾 使用預設值 · 點擊編輯';
+}
+
+function loadResourceBudget() {
+  try {
+    const saved = localStorage.getItem('server2355-resource-budget');
+    if (saved) {
+      resourceBudget = { ...DEFAULT_RESOURCE_BUDGET, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.warn('載入資源預算失敗:', e);
+  }
+}
+
+function saveResources() {
+  try {
+    localStorage.setItem('server2355-resource-budget', JSON.stringify(resourceBudget));
+    els.syncStatus.textContent = '✅ 已儲存至本地';
+    setTimeout(() => syncResourcePanel(), 2000);
+    toggleResourcePanel(false);
+    // 重新渲染 modal 以更新資源顯示
+    if (selectedDayData) {
+      openModal(selectedDayData.date);
+    }
+  } catch (e) {
+    console.error('儲存失敗:', e);
+    els.syncStatus.textContent = '❌ 儲存失敗';
+  }
+}
+
+function resetResources() {
+  resourceBudget = { ...DEFAULT_RESOURCE_BUDGET };
+  renderResourceInputs();
+  syncResourcePanel();
+  saveResources();
+}
+
+// ========== 匯出 CSV ==========
+function exportCSV() {
+  const rows = [
+    ['Date (UTC)', 'Server Day', 'Week', 'Events', 'Strongest Lord Day', 'Must Do', 'Should Do', 'Skip', 'Key Resources Spend', 'Key Resources Save', 'Notes']
+  ];
+
+  WEEKS_DATA.forEach(week => {
+    week.days.forEach(day => {
+      const eventsStr = day.events.map(ev => {
+        const info = getEventTypeInfo(ev.id);
+        return `${info.label}${ev.day ? ` D${ev.day}` : ''}`;
+      }).join(' | ');
+
+      let mustDo = '', shouldDo = '', skip = '', spend = '', save = '';
+      if (day.strongestLordDay) {
+        const slInfo = getStrongestLordDayInfo(day.strongestLordDay);
+        if (slInfo) {
+          mustDo = slInfo.mainTasks.filter(t => t.must).map(t => t.task).join('; ');
+          shouldDo = slInfo.mainTasks.filter(t => !t.must).map(t => t.task).join('; ');
+          spend = slInfo.keyResources.join('; ');
+          save = slInfo.saveResources.join('; ');
+        }
+      }
+
+      rows.push([
+        day.date,
+        day.serverDay,
+        week.label,
+        eventsStr,
+        day.strongestLordDay ? `Day ${day.strongestLordDay} ${getStrongestLordDayInfo(day.strongestLordDay)?.theme || ''}` : '',
+        mustDo,
+        shouldDo,
+        skip,
+        spend,
+        save,
+        day.notes || ''
+      ]);
+    });
+  });
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `server-2355-calendar-${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+// ========== 主題切換 ==========
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  els.themeIcon.textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('server2355-theme', isDark ? 'light' : 'dark');
+}
+
+// 載入主題偏好
+(function loadTheme() {
+  const saved = localStorage.getItem('server2355-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+  els.themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+})();
+
+// ========== Service Worker 註冊 (離線支援) ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // 忽略註冊失敗
+    });
+  });
+}
+
+console.log('🦊 Server 2355 Calendar loaded');
+console.log('📅 4 週資料:', WEEKS_DATA.length, 'weeks');
+console.log('👑 最強領主天數:', STRONGEST_LORD_DAYS.length);
+console.log('🎯 事件類型:', Object.keys(EVENT_TYPES).length);
+  </script>
+</body>
+</html>

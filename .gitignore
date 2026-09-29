@@ -1,0 +1,11 @@
+# 本地 secrets（絕對唔可以入 git）
+deploy/.upload-token
+
+# 上傳落嚟嘅原始檔案（由 fetch-uploads.sh 建立）
+uploads/
+
+# 本地診斷 / wrangler 暫存
+.probe/
+.wrangler/
+node_modules/
+.DS_Store

@@ -1,0 +1,2 @@
+# 呢個目錄嘅敏感檔案唔可以入 git
+.upload-token

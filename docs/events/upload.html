@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Kingshot 私人工具頁：上傳 HTML / JPG 等靜態檔案俾 Evelyn 🦊 做效能與 SEO 分析。">
+  <title>上傳檔案俾 Evelyn 🦊 | 網頁優化分析</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ===========================================================
+       上傳工具頁 — 視覺語言沿用 server-2355-calendar.css
+       （同一套色票 / 圓角 / 陰影 / 字體 / 深淺色 theme）
+       =========================================================== */
+    :root {
+      /* 淺色主題 */
+      --bg-primary: #f8f9fa;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e9ecef;
+      --text-primary: #212529;
+      --text-secondary: #495057;
+      --text-muted: #6c757d;
+      --border-color: #dee2e6;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --today-ring: #e74c3c;
+      --today-bg: #fdf2f2;
+      --header-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --btn-primary: #3498db;
+      --btn-primary-hover: #2980b9;
+      --btn-secondary: #6c757d;
+      --btn-secondary-hover: #5a6268;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      /* 工具頁狀態色 */
+      --state-ok: #27ae60;
+      --state-ok-bg: #eafaf1;
+      --state-warn: #b7791f;
+      --state-warn-bg: #fff8e1;
+      --state-error: #c0392b;
+      --state-error-bg: #fdf2f2;
+      --state-info-bg: #eaf4fd;
+      --focus-ring: rgba(52, 152, 219, 0.35);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-tertiary: #0f3460;
+      --text-primary: #eaeaea;
+      --text-secondary: #b8b8b8;
+      --text-muted: #888;
+      --border-color: #2a2a4a;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+      --today-ring: #ff6b6b;
+      --today-bg: #3d1a1a;
+      --header-gradient: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+      --btn-primary: #4da6e8;
+      --btn-primary-hover: #6db3ea;
+      --btn-secondary: #6c757d;
+      --btn-secondary-hover: #868e96;
+      --state-ok: #2ecc71;
+      --state-ok-bg: #14311f;
+      --state-warn: #f1c40f;
+      --state-warn-bg: #3a2f10;
+      --state-error: #ff6b6b;
+      --state-error-bg: #3d1a1a;
+      --state-info-bg: #12304a;
+      --focus-ring: rgba(77, 166, 232, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .app-container { max-width: 1040px; margin: 0 auto; padding: 20px; }
+
+    /* ---------- Header（同 calendar 一致） ---------- */
+    .header {
+      background: var(--header-gradient);
+      color: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -10%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-title h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+    .header-title .subtitle { font-size: 0.95rem; opacity: 0.92; font-weight: 400; max-width: 60ch; }
+    .header-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      line-height: 1.3;
+    }
+
+    .btn-primary { background: var(--btn-primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--btn-primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-secondary { background: var(--btn-secondary); color: #fff; }
+    .btn-secondary:hover:not(:disabled) { background: var(--btn-secondary-hover); }
+    .btn-ghost {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    .btn-ghost:hover:not(:disabled) { color: var(--text-primary); border-color: var(--btn-primary); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn:focus-visible,
+    .token-input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    .btn-icon { font-size: 1.1em; }
+
+    .theme-toggle {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      border-radius: 50%;
+      width: 44px; height: 44px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      color: white;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover { background: rgba(255,255,255,0.25); transform: rotate(15deg); }
+    .theme-toggle:focus-visible { outline: 3px solid rgba(255,255,255,0.7); outline-offset: 2px; }
+
+    /* ---------- Notice ---------- */
+    .notice {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: var(--state-info-bg);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--btn-primary);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .notice strong { color: var(--text-primary); }
+
+    /* ---------- Cards ---------- */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .card-header h2 { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .card-header .card-hint { font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
+    .card-body { padding: 20px; }
+
+    /* ---------- Token ---------- */
+    .token-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .token-field { position: relative; flex: 1 1 320px; min-width: 220px; }
+    .token-input {
+      width: 100%;
+      padding: 11px 76px 11px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: var(--font-mono);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .token-input:focus { outline: none; border-color: var(--btn-primary); box-shadow: 0 0 0 3px var(--focus-ring); }
+    .token-input.is-invalid { border-color: var(--state-error); box-shadow: 0 0 0 3px rgba(231,76,60,0.25); }
+    .token-reveal {
+      position: absolute;
+      top: 50%; right: 8px;
+      transform: translateY(-50%);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .token-reveal:hover { color: var(--text-primary); border-color: var(--btn-primary); }
+    .token-reveal:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    .hint { font-size: 0.78rem; color: var(--text-muted); margin-top: 8px; }
+    .hint.is-error { color: var(--state-error); font-weight: 600; }
+    .hint.is-ok { color: var(--state-ok); font-weight: 600; }
+
+    /* ---------- Limits ---------- */
+    .limits { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .limit-chip {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+    }
+    .limit-chip.is-max { background: var(--state-warn-bg); color: var(--state-warn); border-color: var(--state-warn); font-family: var(--font-sans); font-weight: 600; }
+    .limits-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 10px; }
+
+    /* ---------- Dropzone ---------- */
+    .dropzone {
+      display: block;
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      background: var(--bg-primary);
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+    .dropzone:hover { border-color: var(--btn-primary); }
+    .dropzone:focus-within { outline: 3px solid var(--focus-ring); outline-offset: 2px; border-color: var(--btn-primary); }
+    .dropzone.is-dragging {
+      border-color: var(--btn-primary);
+      border-style: solid;
+      background: var(--state-info-bg);
+      transform: scale(1.01);
+      box-shadow: var(--shadow-md);
+    }
+    .dz-icon { font-size: 2.2rem; line-height: 1; margin-bottom: 8px; }
+    .dz-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .dz-sub { font-size: 0.82rem; color: var(--text-muted); }
+    .file-input {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ---------- Queue ---------- */
+    .queue { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .queue-empty { font-size: 0.85rem; color: var(--text-muted); padding: 12px 0; }
+    .qitem {
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: var(--bg-primary);
+    }
+    .qitem.status-ready { border-left-color: var(--btn-primary); }
+    .qitem.status-invalid { border-left-color: var(--state-error); background: var(--state-error-bg); }
+    .qitem.status-uploading { border-left-color: var(--btn-primary); }
+    .qitem.status-done { border-left-color: var(--state-ok); }
+    .qitem.status-error { border-left-color: var(--state-error); background: var(--state-error-bg); }
+    .q-top { display: flex; align-items: flex-start; gap: 10px; }
+    .q-icon { font-size: 1.2rem; line-height: 1.4; }
+    .q-info { flex: 1 1 auto; min-width: 0; }
+    .q-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      word-break: break-all;
+      font-family: var(--font-mono);
+    }
+    .q-meta { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); }
+    .q-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .q-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 3px 10px;
+      white-space: nowrap;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    .q-badge.badge-ready { background: var(--state-info-bg); color: var(--btn-primary); border-color: var(--btn-primary); }
+    .q-badge.badge-invalid { background: var(--state-error-bg); color: var(--state-error); border-color: var(--state-error); }
+    .q-badge.badge-uploading { background: var(--state-info-bg); color: var(--btn-primary); border-color: var(--btn-primary); }
+    .q-badge.badge-done { background: var(--state-ok-bg); color: var(--state-ok); border-color: var(--state-ok); }
+    .q-badge.badge-error { background: var(--state-error-bg); color: var(--state-error); border-color: var(--state-error); }
+
+    .q-progress {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--bg-tertiary);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .q-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: var(--btn-primary);
+      transition: width 0.2s ease;
+    }
+    .qitem.status-done .q-bar { background: var(--state-ok); }
+    .qitem.status-error .q-bar { background: var(--state-error); }
+    .q-progress-text { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+
+    .q-reason {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--state-error);
+    }
+    .q-reason .q-reason-code { font-family: var(--font-mono); font-weight: 400; opacity: 0.8; }
+
+    .q-result {
+      margin-top: 12px;
+      border-top: 1px dashed var(--border-color);
+      padding-top: 10px;
+    }
+    .q-result-title { font-size: 0.8rem; font-weight: 700; color: var(--state-ok); }
+    .q-result-msg { font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px; }
+    .q-result-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+    .raw-key {
+      flex: 1 1 260px;
+      min-width: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .queue-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+    .status-line {
+      flex: 1 1 240px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      min-height: 1.4em;
+    }
+    .status-line.is-ok { color: var(--state-ok); font-weight: 600; }
+    .status-line.is-error { color: var(--state-error); font-weight: 600; }
+    .status-line.is-warn { color: var(--state-warn); font-weight: 600; }
+
+    /* ---------- Recent ---------- */
+    .state-box {
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 22px 16px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .state-box.is-error { border-color: var(--state-error); color: var(--state-error); background: var(--state-error-bg); font-weight: 600; }
+    .state-box.is-loading { border-style: solid; }
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--btn-primary);
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: -2px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .recent-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .recent-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+    }
+    .recent-main { flex: 1 1 240px; min-width: 0; }
+    .recent-name { font-size: 0.88rem; font-weight: 600; font-family: var(--font-mono); word-break: break-all; }
+    .recent-meta { font-size: 0.74rem; color: var(--text-muted); font-family: var(--font-mono); }
+    .recent-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* ---------- Footer ---------- */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 32px;
+    }
+    .footer-links { display: flex; justify-content: center; gap: 24px; margin-top: 12px; flex-wrap: wrap; }
+    .footer-links a { color: var(--btn-primary); text-decoration: none; font-weight: 600; }
+    .footer-links a:hover { text-decoration: underline; }
+
+    /* ---------- a11y ---------- */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 768px) {
+      .app-container { padding: 12px; }
+      .header { padding: 16px; border-radius: 12px; }
+      .header-title h1 { font-size: 1.3rem; }
+      .card-body { padding: 14px; }
+      .card-header { padding: 14px; }
+      .dropzone { padding: 22px 14px; }
+      .q-top { flex-wrap: wrap; }
+      .q-actions { width: 100%; justify-content: flex-start; }
+      .queue-toolbar .btn { flex: 1 1 auto; }
+      .recent-actions { width: 100%; }
+      .token-field { flex-basis: 100%; }
+    }
+
+    /* ---------- Reduced motion ---------- */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+      .btn-primary:hover:not(:disabled) { transform: none; }
+      .theme-toggle:hover { transform: none; }
+      .dropzone.is-dragging { transform: none; }
+    }
+
+    @media print {
+      .dropzone, .queue-toolbar, .theme-toggle, .btn { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="header-title">
+          <h1>🦊 上傳檔案俾 Evelyn 🦊 分析網頁優化</h1>
+          <div class="subtitle">支援 HTML、JPG／PNG／WebP 等靜態檔案，多檔排隊、單檔 10 MiB 上限。上傳完成後 Evelyn 會做效能（載入速度、檔案大小、快取）同 SEO（標題、meta、結構、索引設定）分析。</div>
+        </div>
+        <div class="header-controls">
+          <button class="theme-toggle" id="theme-toggle" aria-label="切換深色／淺色模式" title="切換主題">
+            <span id="theme-icon">🌙</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Private tool notice -->
+    <div class="notice" role="note">
+      <span aria-hidden="true">🔒</span>
+      <div>
+        <strong>私人工具頁</strong>：呢頁係 Wilson／Evelyn 專用嘅內部上傳頁，已設 <code>noindex,nofollow</code>，唔會俾搜尋引擎收錄。所有上傳檔案經 <code>/api/*</code> 處理，需要 <code>UPLOAD_TOKEN</code> 授權；Token 只會存喺你部機嘅 <code>localStorage</code>，唔會送到第三方。
+      </div>
+    </div>
+
+    <!-- Token -->
+    <section class="card" aria-labelledby="token-heading">
+      <div class="card-header">
+        <h2 id="token-heading"><span aria-hidden="true">🔑</span> 存取 Token（UPLOAD_TOKEN）</h2>
+        <span class="card-hint">未填 Token 唔可以上傳</span>
+      </div>
+      <div class="card-body">
+        <div class="token-row">
+          <div class="token-field">
+            <label class="sr-only" for="token-input">UPLOAD_TOKEN</label>
+            <input class="token-input" id="token-input" type="password" inputmode="text"
+                   autocomplete="off" autocapitalize="off" spellcheck="false"
+                   placeholder="貼上 UPLOAD_TOKEN" aria-describedby="token-hint">
+            <button class="token-reveal" id="token-reveal" type="button" aria-pressed="false"
+                    aria-controls="token-input" aria-label="顯示 Token">顯示</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="token-clear" type="button">
+            <span class="btn-icon" aria-hidden="true">🗑️</span> 清除 Token
+          </button>
+        </div>
+        <p class="hint" id="token-hint">Token 會自動存喺呢個瀏覽器（<code>localStorage</code> 鍵：<code>kingshot_upload_token</code>），下次開頁唔需要再填。</p>
+      </div>
+    </section>
+
+    <!-- Limits + dropzone + queue -->
+    <section class="card" aria-labelledby="upload-heading">
+      <div class="card-header">
+        <h2 id="upload-heading"><span aria-hidden="true">📤</span> 揀檔案上傳</h2>
+        <span class="card-hint">可一次過揀或者拖拉多個檔案</span>
+      </div>
+      <div class="card-body">
+        <div class="limits" aria-label="上傳限制">
+          <span class="limit-chip is-max">每個檔案上限 10 MiB</span>
+          <span class="limit-chip">.html</span>
+          <span class="limit-chip">.htm</span>
+          <span class="limit-chip">.jpg</span>
+          <span class="limit-chip">.jpeg</span>
+          <span class="limit-chip">.png</span>
+          <span class="limit-chip">.webp</span>
+          <span class="limit-chip">.gif</span>
+          <span class="limit-chip">.svg</span>
+          <span class="limit-chip">.css</span>
+          <span class="limit-chip">.js</span>
+          <span class="limit-chip">.json</span>
+          <span class="limit-chip">.txt</span>
+          <span class="limit-chip">.md</span>
+        </div>
+        <p class="limits-note">唔喺上面清單嘅格式會即時標紅，唔會上傳（避免白費 bandwidth）。超過 10 MiB 嘅檔案同樣會喺排隊前被攔截。</p>
+
+        <label class="dropzone" id="dropzone" for="file-input">
+          <input class="file-input" id="file-input" type="file" multiple
+                 accept=".html,.htm,.jpg,.jpeg,.png,.webp,.gif,.svg,.css,.js,.json,.txt,.md"
+                 aria-describedby="dz-help">
+          <div class="dz-icon" aria-hidden="true">📥</div>
+          <div class="dz-title">拖拉檔案嚟呢度，或者點擊揀檔</div>
+          <div class="dz-sub" id="dz-help">支援鍵盤操作：Tab 到呢個區域，再按 Enter 或 Space 開檔案選擇器</div>
+        </label>
+
+        <ul class="queue" id="queue" aria-label="上傳佇列"></ul>
+        <p class="queue-empty" id="queue-empty">暫時未有檔案排隊。</p>
+
+        <div class="queue-toolbar">
+          <button class="btn btn-primary" id="upload-btn" type="button">
+            <span class="btn-icon" aria-hidden="true">🚀</span> 開始上傳
+          </button>
+          <button class="btn btn-ghost" id="clear-btn" type="button">
+            <span class="btn-icon" aria-hidden="true">🧹</span> 清空清單
+          </button>
+          <span class="status-line" id="status-line" role="status" aria-live="polite"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent -->
+    <section class="card" aria-labelledby="recent-heading">
+      <div class="card-header">
+        <h2 id="recent-heading"><span aria-hidden="true">🗂️</span> 最近上傳（最新 20 個）</h2>
+        <button class="btn btn-ghost btn-sm" id="recent-refresh" type="button">
+          <span class="btn-icon" aria-hidden="true">🔄</span> 重新載入
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="recent-container" aria-live="polite">
+          <div class="state-box is-loading"><span class="spinner" aria-hidden="true"></span>載入中…</div>
+        </div>
+        <p class="limits-note" id="recent-note">🔐 唯讀端點 <code>/api/raw?key=…</code> <strong>需要授權</strong>：帶 <code>x-upload-token</code> header，否則回 401 <code>unauthorized</code>（伺服器亦收 <code>?token=</code>，但 token 會留喺 URL 記錄，唔建議）。所以呢頁唔會用裸連結開檔 —— 圖片用「👁 預覽」、其他格式用「👁 檢視（純文字）」或者「⬇ 下載」，全部由頁面自動帶 token 取 blob（圖片以白名單 <code>image/*</code>；HTML／SVG／JS 等一律唔會以 <code>text/html</code> 或 <code>image/svg+xml</code> 開）。「📋 複製」出嚟嘅連結本身唔含 token，貼去 curl 時要自己加返 header。</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div>🦊 Evelyn 上傳工具 · Kingshot Server 2355 · 只供內部使用</div>
+      <div class="footer-links">
+        <a href="./">← 返回活動日曆</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Screen-reader live region -->
+  <div class="sr-only" id="sr-live" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ============================ 設定 ============================ */
+    var MAX_SIZE = 10 * 1024 * 1024;               // 10 MiB
+    var MAX_SIZE_LABEL = '10 MiB';
+    var TOKEN_STORAGE_KEY = 'kingshot_upload_token';
+    var THEME_STORAGE_KEY = 'server2355-theme';
+    var RECENT_LIMIT = 20;
+    var ALLOWED_EXT = ['html', 'htm', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'css', 'js', 'json', 'txt', 'md'];
+
+    var ERROR_TEXT = {
+      unauthorized: 'Token 失效或者未設定，請檢查 UPLOAD_TOKEN',
+      too_large: '檔案超過 10 MiB',
+      unsupported_type: '唔支援嘅檔案類型',
+      no_file: '伺服器收唔到檔案，請再試一次',
+      bad_key: '檔案 key 格式唔啱（唔係伺服器認可嘅格式）',
+      bad_request: '請求格式唔啱（JSON body 解析失敗）',
+      not_found: '伺服器搵唔到呢個檔案（可能已經被刪除）',
+      method_not_allowed: 'HTTP 方法唔啱（呢個端點只收 POST）',
+      no_storage: '伺服器未配置儲存空間（UPLOADS／KV binding 未設好）',
+      storage_error: '伺服器寫入儲存失敗，請稍後再試',
+      internal_error: '伺服器內部錯誤，請稍後再試或者通知 Evelyn'
+    };
+
+    var STATUS_BADGE = {
+      ready: { text: '待上傳', cls: 'badge-ready', icon: '📄' },
+      uploading: { text: '上傳中', cls: 'badge-uploading', icon: '⏫' },
+      done: { text: '已完成', cls: 'badge-done', icon: '✅' },
+      error: { text: '失敗', cls: 'badge-error', icon: '⚠️' },
+      invalid: { text: '格式／大小不符', cls: 'badge-invalid', icon: '⛔' }
+    };
+
+    /* ============================ 狀態 ============================ */
+    var queue = [];          // {id, file, status, progress, reason, errorCode, result}
+    var queueSeq = 0;
+    var isUploading = false;
+    var recentState = { kind: 'loading' };
+    var els = {};
+
+    /* ============================ 小工具 ============================ */
+    function $(id) { return document.getElementById(id); }
+
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function extOf(name) {
+      var idx = String(name).lastIndexOf('.');
+      if (idx < 0 || idx === String(name).length - 1) return '';
+      return String(name).slice(idx + 1).toLowerCase();
+    }
+
+    function fmtSize(bytes) {
+      var n = Number(bytes);
+      if (!isFinite(n) || n < 0) return '未知大小';
+      if (n < 1024) return n + ' B';
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KiB';
+      return (n / (1024 * 1024)).toFixed(2) + ' MiB';
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return '時間未知';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      function pad(v) { return (v < 10 ? '0' : '') + v; }
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+        ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function rawUrl(key) {
+      return '/api/raw?key=' + encodeURIComponent(String(key));
+    }
+
+    function parseJson(text) {
+      try { return JSON.parse(text); } catch (e) { return null; }
+    }
+
+    function tokenOrEmpty() {
+      try { return localStorage.getItem(TOKEN_STORAGE_KEY) || ''; } catch (e) { return ''; }
+    }
+
+    function saveToken(value) {
+      try {
+        if (value) localStorage.setItem(TOKEN_STORAGE_KEY, value);
+        else localStorage.removeItem(TOKEN_STORAGE_KEY);
+      } catch (e) { /* 私密模式可能停用 localStorage，唔影響本次操作 */ }
+    }
+
+    function announce(text) {
+      if (els.srLive) els.srLive.textContent = text;
+    }
+
+    function setStatus(text, kind) {
+      if (!els.statusLine) return;
+      els.statusLine.textContent = text || '';
+      els.statusLine.className = 'status-line' + (kind ? ' is-' + kind : '');
+    }
+
+    /* ============================ Token ============================ */
+    function updateTokenUI(showInlineError) {
+      var token = els.tokenInput ? els.tokenInput.value.trim() : '';
+      var hint = els.tokenHint;
+      if (!hint) return;
+      var hasToken = token.length > 0;
+      els.tokenInput.classList.toggle('is-invalid', !hasToken && !!showInlineError);
+      if (!hasToken) {
+        hint.className = 'hint' + (showInlineError ? ' is-error' : '');
+        hint.innerHTML = showInlineError
+          ? '⚠️ 未填 Token：請先貼上 UPLOAD_TOKEN，否則唔可以上傳。（Token 由 Evelyn 提供）'
+          : 'Token 會自動存喺呢個瀏覽器（<code>localStorage</code> 鍵：<code>kingshot_upload_token</code>），下次開頁唔需要再填。';
+      } else {
+        hint.className = 'hint is-ok';
+        hint.textContent = '✅ 已儲存 Token 喺此瀏覽器（' + token.length + ' 個字元）。';
+      }
+      updateToolbarState();
+    }
+
+    function updateToolbarState() {
+      var hasToken = !!tokenOrEmpty();
+      var readyCount = queue.filter(function (i) { return i.status === 'ready'; }).length;
+      if (els.uploadBtn) els.uploadBtn.disabled = isUploading || readyCount === 0;
+      if (els.clearBtn) els.clearBtn.disabled = isUploading || queue.length === 0;
+      if (!isUploading) {
+        if (readyCount > 0 && !hasToken) setStatus('仲有 ' + readyCount + ' 個檔案待上傳，但未填 Token。', 'warn');
+      }
+    }
+
+    /* ============================ 驗證 ============================ */
+    function validateFile(file) {
+      if (file.size > MAX_SIZE) {
+        return { code: 'too_large', text: '檔案 ' + fmtSize(file.size) + '，超過單檔上限 ' + MAX_SIZE_LABEL + '。' };
+      }
+      if (file.size === 0) {
+        return { code: 'empty_file', text: '呢個檔案係 0 bytes，冇內容可以分析。' };
+      }
+      var ext = extOf(file.name);
+      if (!ext) {
+        return { code: 'unsupported_type', text: '檔案冇副檔名，唔可以判斷類型。' };
+      }
+      if (ALLOWED_EXT.indexOf(ext) === -1) {
+        return { code: 'unsupported_type', text: '唔支援 .' + ext + ' 格式。只收：' + ALLOWED_EXT.join('、') + '。' };
+      }
+      return null;
+    }
+
+    function addFiles(fileList) {
+      if (!fileList || !fileList.length) return;
+      var added = 0;
+      var rejected = 0;
+      for (var i = 0; i < fileList.length; i++) {
+        var file = fileList[i];
+        var problem = validateFile(file);
+        queueSeq += 1;
+        queue.push({
+          id: 'q' + queueSeq,
+          file: file,
+          status: problem ? 'invalid' : 'ready',
+          progress: 0,
+          reason: problem ? problem.text : '',
+          errorCode: problem ? problem.code : '',
+          result: null
+        });
+        if (problem) rejected += 1; else added += 1;
+      }
+      renderQueue();
+      var msg = '已加入 ' + added + ' 個檔案';
+      if (rejected) msg += '，' + rejected + ' 個唔符合規定（已標紅，唔會上傳）';
+      setStatus(msg + '。', rejected ? 'warn' : 'ok');
+      announce(msg + '。');
+    }
+
+    /* ============================ 佇列渲染 ============================ */
+    function renderQueue() {
+      var list = els.queue;
+      if (!list) return;
+      list.innerHTML = queue.map(itemMarkup).join('');
+      if (els.queueEmpty) els.queueEmpty.style.display = queue.length ? 'none' : 'block';
+      // 綁定移除按鈕
+      Array.prototype.forEach.call(list.querySelectorAll('[data-remove]'), function (btn) {
+        btn.addEventListener('click', function () {
+          removeItem(btn.getAttribute('data-remove'));
+        });
+      });
+      // 綁定複製按鈕
+      Array.prototype.forEach.call(list.querySelectorAll('[data-copy]'), function (btn) {
+        btn.addEventListener('click', function () {
+          copyText(btn.getAttribute('data-copy'), btn);
+        });
+      });
+      // 綁定重試按鈕
+      Array.prototype.forEach.call(list.querySelectorAll('[data-retry]'), function (btn) {
+        btn.addEventListener('click', function () {
+          resetItem(btn.getAttribute('data-retry'));
+        });
+      });
+      // 綁定預覽／純文字檢視／下載（全部自動帶 token 取 blob）
+      bindAssetActions(list);
+      // 快取 DOM 參照（供進度更新用）
+      queue.forEach(function (item) {
+        item.el = list.querySelector('[data-id="' + item.id + '"]');
+      });
+      updateToolbarState();
+    }
+
+    function itemMarkup(item) {
+      var badge = STATUS_BADGE[item.status] || STATUS_BADGE.ready;
+      var ext = extOf(item.file.name).toUpperCase() || '未知格式';
+      var html = '';
+      html += '<li class="qitem status-' + item.status + '" data-id="' + item.id + '">';
+      html += '<div class="q-top">';
+      html += '<span class="q-icon" aria-hidden="true">' + badge.icon + '</span>';
+      html += '<div class="q-info">';
+      html += '<div class="q-name">' + escapeHtml(item.file.name) + '</div>';
+      html += '<div class="q-meta">' + escapeHtml(fmtSize(item.file.size)) + ' · ' + escapeHtml(ext) + '</div>';
+      html += '</div>';
+      html += '<div class="q-actions">';
+      html += '<span class="q-badge ' + badge.cls + '">' + badge.text + '</span>';
+      if (item.status === 'ready' || item.status === 'invalid' || item.status === 'error') {
+        if (item.status === 'error') {
+          html += '<button class="btn btn-ghost btn-sm" type="button" data-retry="' + item.id + '"' +
+            ' aria-label="重試上傳 ' + escapeHtml(item.file.name) + '">↻ 重試</button>';
+        }
+        html += '<button class="btn btn-ghost btn-sm" type="button" data-remove="' + item.id + '"' +
+          ' aria-label="從清單移除 ' + escapeHtml(item.file.name) + '">移除</button>';
+      }
+      html += '</div></div>';
+
+      if (item.status === 'uploading' || item.status === 'done' || item.status === 'error') {
+        html += '<div class="q-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' +
+          item.progress + '" aria-label="' + escapeHtml(item.file.name) + ' 上傳進度">';
+        html += '<div class="q-bar" style="width:' + item.progress + '%;"></div></div>';
+        html += '<div class="q-progress-text">' + item.progress + '%</div>';
+      }
+
+      if (item.status === 'invalid') {
+        html += '<div class="q-reason">⛔ ' + escapeHtml(item.reason) +
+          (item.errorCode ? ' <span class="q-reason-code">(' + escapeHtml(item.errorCode) + ')</span>' : '') + '</div>';
+      }
+
+      if (item.status === 'error') {
+        html += '<div class="q-reason">⚠️ ' + escapeHtml(item.reason) +
+          (item.errorCode ? ' <span class="q-reason-code">(' + escapeHtml(item.errorCode) + ')</span>' : '') + '</div>';
+      }
+
+      if (item.status === 'done' && item.result) {
+        var key = item.result.key || '';
+        var rawLink = item.result.url || rawUrl(key);
+        var doneName = item.result.name || item.file.name;
+        html += '<div class="q-result">';
+        html += '<div class="q-result-title">✅ 上傳結果</div>';
+        html += '<div class="q-result-msg">已收到，Evelyn 會分析 🦊（' + escapeHtml(doneName) +
+          ' · ' + escapeHtml(fmtSize(item.result.size || item.file.size)) + '）</div>';
+        html += '<div class="q-result-row">';
+        html += '<code class="raw-key">' + escapeHtml(rawLink) + '</code>';
+        html += '<button class="btn btn-secondary btn-sm" type="button" data-copy="' + escapeHtml(rawLink) + '">📋 複製連結</button>';
+        html += assetButtonsMarkup(key, doneName, assetKind(doneName));
+        html += '</div>';
+        html += '<p class="limits-note">🔐 上面條連結唔含 token：<code>/api/raw</code> 要帶 <code>x-upload-token</code> header 才讀到，貼去 curl 時請自己加返（伺服器亦收 <code>?token=</code>，但 token 會留喺 URL 同瀏覽器記錄，唔建議）。頁內嘅「預覽／檢視／下載」會自動帶 token 取檔；非圖片格式一律唔會以 <code>text/html</code> 開新視窗。</p>';
+        html += '</div>';
+      }
+
+      html += '</li>';
+      return html;
+    }
+
+    function removeItem(id) {
+      if (isUploading) return;
+      queue = queue.filter(function (i) { return i.id !== id; });
+      renderQueue();
+      setStatus('已移除 1 個檔案。', null);
+    }
+
+    /* 失敗後可以重試：由 error 狀態重返 ready */
+    function resetItem(id) {
+      if (isUploading) return;
+      var item = queue.filter(function (i) { return i.id === id; })[0];
+      if (!item || item.status !== 'error') return;
+      item.status = 'ready';
+      item.progress = 0;
+      item.reason = '';
+      item.errorCode = '';
+      item.result = null;
+      renderQueue();
+      setStatus('已將 ' + item.file.name + ' 重設為待上傳，可以再撳「開始上傳」。', null);
+      announce(item.file.name + ' 已重設為待上傳。');
+    }
+
+    function paintProgress(item) {
+      if (!item.el) return;
+      var bar = item.el.querySelector('.q-bar');
+      var wrap = item.el.querySelector('.q-progress');
+      var text = item.el.querySelector('.q-progress-text');
+      if (bar) bar.style.width = item.progress + '%';
+      if (wrap) wrap.setAttribute('aria-valuenow', String(item.progress));
+      if (text) text.textContent = item.progress + '%';
+    }
+
+    /* ============================ 上傳 ============================ */
+    function uploadAll() {
+      if (isUploading) return;
+      var token = tokenOrEmpty();
+      if (!token) {
+        updateTokenUI(true);
+        setStatus('未填 Token，唔可以上傳。請先貼上 UPLOAD_TOKEN。', 'error');
+        announce('未填 Token，唔可以上傳。');
+        if (els.tokenInput) els.tokenInput.focus();
+        return;
+      }
+      var pending = queue.filter(function (i) { return i.status === 'ready'; });
+      if (!pending.length) {
+        setStatus('冇待上傳嘅檔案（格式／大小不符嘅檔案已經被攔截）。', 'warn');
+        announce('冇待上傳嘅檔案。');
+        return;
+      }
+      isUploading = true;
+      updateToolbarState();
+      setStatus('開始上傳 ' + pending.length + ' 個檔案…', null);
+      announce('開始上傳 ' + pending.length + ' 個檔案。');
+
+      var chain = Promise.resolve();
+      pending.forEach(function (item) {
+        chain = chain.then(function () { return uploadOne(item); });
+      });
+      chain.then(function () {
+        isUploading = false;
+        var okCount = queue.filter(function (i) { return i.status === 'done'; }).length;
+        var failCount = queue.filter(function (i) { return i.status === 'error'; }).length;
+        renderQueue();
+        if (failCount) setStatus('完成：' + okCount + ' 個成功，' + failCount + ' 個失敗。', 'error');
+        else setStatus('全部 ' + okCount + ' 個檔案上傳成功，Evelyn 會分析。', 'ok');
+        announce('上傳完成：' + okCount + ' 個成功，' + failCount + ' 個失敗。');
+      });
+    }
+
+    function uploadOne(item) {
+      return new Promise(function (resolve) {
+        var token = tokenOrEmpty();
+        item.status = 'uploading';
+        item.progress = 0;
+        item.errorCode = '';
+        item.reason = '';
+        renderQueue();
+
+        var xhr = new XMLHttpRequest();
+        var form = new FormData();
+        form.append('file', item.file, item.file.name);
+        form.append('token', token);
+
+        xhr.open('POST', '/api/upload', true);
+        try { xhr.setRequestHeader('x-upload-token', token); } catch (e) { /* 忽略 */ }
+        xhr.timeout = 5 * 60 * 1000;
+
+        xhr.upload.onprogress = function (evt) {
+          if (evt.lengthComputable && evt.total > 0) {
+            item.progress = Math.min(100, Math.round((evt.loaded / evt.total) * 100));
+            paintProgress(item);
+          }
+        };
+
+        xhr.onload = function () {
+          var payload = parseJson(xhr.responseText);
+          if (xhr.status === 200 && payload && payload.ok && payload.file) {
+            item.status = 'done';
+            item.progress = 100;
+            item.result = payload.file;
+            item.reason = '';
+            item.errorCode = '';
+            renderQueue();
+            setStatus('✅ ' + item.file.name + ' 已收到，Evelyn 會分析。', 'ok');
+            announce(item.file.name + ' 上傳成功，已收到。');
+            loadRecent();
+          } else {
+            var code = (payload && payload.error) ? String(payload.error) : '';
+            item.status = 'error';
+            item.errorCode = code || ('http_' + xhr.status);
+            item.reason = describeError(code, xhr.status, payload, xhr.responseText);
+            renderQueue();
+            setStatus('❌ ' + item.file.name + '：' + item.reason, 'error');
+            announce(item.file.name + ' 上傳失敗：' + item.reason);
+          }
+          resolve();
+        };
+
+        xhr.onerror = function () {
+          item.status = 'error';
+          item.errorCode = 'network_error';
+          item.reason = '網絡連線失敗（可能斷線、被防火牆擋，或者站台暫時唔通）。可以重試。';
+          renderQueue();
+          setStatus('❌ ' + item.file.name + '：網絡連線失敗。', 'error');
+          announce(item.file.name + ' 上傳失敗：網絡連線失敗。');
+          resolve();
+        };
+
+        xhr.ontimeout = function () {
+          item.status = 'error';
+          item.errorCode = 'timeout';
+          item.reason = '上傳超時（等待超過 5 分鐘），請檢查網絡後重試。';
+          renderQueue();
+          setStatus('❌ ' + item.file.name + '：上傳超時。', 'error');
+          announce(item.file.name + ' 上傳失敗：超時。');
+          resolve();
+        };
+
+        xhr.send(form);
+      });
+    }
+
+    function describeError(code, status, payload, rawText, ctx) {
+      if (code === 'too_large') {
+        // 伺服器有回 maxBytes 而且同前端常數唔一樣 → 照伺服器講嘅數講返出嚟
+        if (payload && payload.maxBytes && Number(payload.maxBytes) !== MAX_SIZE) {
+          return '檔案超過 ' + fmtSize(payload.maxBytes);
+        }
+        return ERROR_TEXT.too_large;
+      }
+      if (code === 'unsupported_type' && payload && Array.isArray(payload.allowed) && payload.allowed.length) {
+        return '唔支援嘅檔案類型（伺服器只收：' + payload.allowed.join('、') + '）';
+      }
+      // /api/raw 同 /api/delete 回 404 = 檔案唔見咗；/api/upload 回 404 = 路由未部署
+      if (status === 404) {
+        if (ctx === 'raw' || ctx === 'delete') return ERROR_TEXT.not_found;
+        return '伺服器搵唔到 /api/upload（HTTP 404），可能 API 未部署。';
+      }
+      if (code && ERROR_TEXT[code]) return ERROR_TEXT[code];
+      if (code) return '伺服器回報錯誤碼：' + code;
+      if (status === 401) return ERROR_TEXT.unauthorized;
+      if (status === 413) return ERROR_TEXT.too_large;
+      if (status === 415) return ERROR_TEXT.unsupported_type;
+      if (status === 400) return ERROR_TEXT.no_file;
+      if (status === 405) return ERROR_TEXT.method_not_allowed;
+      if (status === 429) return '上傳太頻繁（HTTP 429），請等一等再試。';
+      if (status >= 500) return '伺服器錯誤（HTTP ' + status + '），請稍後再試或者通知 Evelyn。';
+      if (!parseJson(rawText)) return '伺服器回應唔係 JSON（HTTP ' + status + '），API 可能未部署或路徑唔啱。';
+      if (payload && payload.message) return String(payload.message);
+      return '上傳失敗（HTTP ' + status + '）。';
+    }
+
+    /* ============================ 複製連結 ============================ */
+    function copyText(text, btn) {
+      var original = btn ? btn.textContent : '';
+      function ok() {
+        if (btn) {
+          btn.textContent = '✅ 已複製';
+          setTimeout(function () { btn.textContent = original; }, 1800);
+        }
+        setStatus('已複製連結：' + text, 'ok');
+        announce('已複製連結。');
+      }
+      function fail() {
+        if (btn) {
+          btn.textContent = '⚠️ 請手動複製';
+          setTimeout(function () { btn.textContent = original; }, 2200);
+        }
+        setStatus('自動複製失敗，請手動選取連結文字複製。', 'error');
+        announce('自動複製失敗，請手動複製。');
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok, function () { legacyCopy(text) ? ok() : fail(); });
+      } else {
+        legacyCopy(text) ? ok() : fail();
+      }
+    }
+
+    function legacyCopy(text) {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      var done = false;
+      try {
+        area.select();
+        area.setSelectionRange(0, area.value.length);
+        done = document.execCommand('copy');
+      } catch (e) {
+        done = false;
+      }
+      document.body.removeChild(area);
+      return done;
+    }
+
+    /* ==================== 安全取檔預覽／下載（/api/raw 需要 token） ==================== */
+
+    /**
+     * 只有呢五種 raster 圖可以喺新 tab 用 image/* 顯示。
+     * 刻意唔包 svg：image/svg+xml 開新 tab 係可以執行 <script> 嘅文件。
+     */
+    var IMAGE_MIME = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      gif: 'image/gif'
+    };
+
+    /** image = 可以喺新 tab 以 image/* 預覽；其他一律當 text（只可下載／純文字檢視） */
+    function assetKind(name) {
+      return Object.prototype.hasOwnProperty.call(IMAGE_MIME, extOf(name)) ? 'image' : 'text';
+    }
+
+    /**
+     * 強制決定 blob 嘅 MIME type —— 呢個係整套防 XSS 嘅關鍵。
+     * /api/raw 回嘅 Content-Type 來自上傳時嘅 metadata（上傳者自己宣告），
+     * 即係一個 .jpg 可以宣告成 text/html；所以伺服器回咩 type 都一律唔採用。
+     * 只認呢三種輸出：白名單 raster image/*、text/plain、application/octet-stream。
+     */
+    function forcedBlobType(mode, name) {
+      if (mode === 'image-preview') {
+        return Object.prototype.hasOwnProperty.call(IMAGE_MIME, extOf(name)) ? IMAGE_MIME[extOf(name)] : null;
+      }
+      if (mode === 'text-view') return 'text/plain;charset=utf-8';   // 純文字，唔會執行
+      return 'application/octet-stream';                              // 下載專用，唔會執行
+    }
+
+    function rawError(code, status, message) {
+      var err = new Error(message);
+      err.code = code || 'raw_error';
+      err.status = status || 0;
+      return err;
+    }
+
+    /**
+     * GET /api/raw?key=…（一定要帶 x-upload-token）
+     * → 回一個「安全 MIME type」嘅 blob URL。
+     * 注意：response body 只可以讀一次，所以先睇 status 再決定讀 text 定 blob。
+     */
+    function fetchRawBlobUrl(key, name, mode) {
+      var token = tokenOrEmpty();
+      if (!token) {
+        return Promise.reject(rawError('unauthorized', 0, 'Token 失效或者未設定，所以讀唔到檔案。請先喺上面填 UPLOAD_TOKEN。'));
+      }
+      if (mode === 'image-preview' && !forcedBlobType(mode, name)) {
+        return Promise.reject(rawError('unsupported_preview', 0, '呢個格式唔可以喺新 tab 預覽（為安全起見只可以下載或者以純文字檢視）。'));
+      }
+      return fetch('/api/raw?key=' + encodeURIComponent(String(key)), {
+        method: 'GET',
+        headers: { 'x-upload-token': token },
+        cache: 'no-store'
+      }).then(function (res) {
+        if (res.status === 401) {
+          return res.text().then(function () {
+            throw rawError('unauthorized', 401, ERROR_TEXT.unauthorized);
+          });
+        }
+        if (res.status !== 200) {
+          return res.text().then(function (text) {
+            var payload = parseJson(text);
+            throw rawError(payload && payload.error, res.status,
+              describeError(payload && payload.error, res.status, payload, text, 'raw'));
+          });
+        }
+        return res.blob().then(function (blob) {
+          return URL.createObjectURL(new Blob([blob], { type: forcedBlobType(mode, name) }));
+        });
+      });
+    }
+
+    /**
+     * 一個入口做三件事：
+     *   image-preview → blob type = 副檔名推嘅 image/*（唔係 text/html、唔係 image/svg+xml）→ 新 tab 睇圖
+     *   text-view     → blob type = text/plain;charset=utf-8 → 新 tab 當純文字睇（HTML／SVG／JS 唔會執行）
+     *   download      → blob type = application/octet-stream + <a download> → 只存檔
+     * blob URL 用完全之後（60 秒）URL.revokeObjectURL() 釋放。
+     */
+    function openRawAsset(key, name, mode, btn) {
+      if (!key) return;
+      var label = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = '取檔中…'; }
+      function restore() { if (btn) { btn.disabled = false; btn.textContent = label; } }
+      function fail(err) {
+        var msg = (err && err.status === 401) ? ERROR_TEXT.unauthorized : (err && err.message ? err.message : '未知錯誤');
+        setStatus('❌ ' + msg, 'error');
+        announce('讀取檔案失敗：' + msg);
+      }
+      fetchRawBlobUrl(key, name, mode).then(function (url) {
+        if (mode === 'download') {
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = name || 'download';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setStatus('⬇ 已開始下載 ' + (name || key) + '（以 application/octet-stream 存檔，唔會執行）。', 'ok');
+          announce('已開始下載 ' + (name || key));
+        } else {
+          // 刻意唔喺 features 傳 'noopener'／'noreferrer'：依 HTML spec 咁做 window.open 會回 null，
+          // 咁就分唔到「被封鎖」同「開咗」；改為開完即刻 win.opener = null 切斷關係。
+          // （blob type 只有 image/* 或 text/plain，兩者都唔會執行 script。）
+          var win = window.open(url, '_blank');
+          if (win) { try { win.opener = null; } catch (e) { /* 忽略 */ } }
+          var what = mode === 'image-preview' ? '圖片預覽' : '純文字檢視';
+          if (win) {
+            setStatus('👁 已喺新 tab 開' + what + '：' + (name || key) +
+              (mode === 'image-preview' ? '（以 image/* 顯示）' : '（以 text/plain 顯示，唔會執行內容）'), 'ok');
+            announce('已開啟' + what + '。');
+          } else {
+            setStatus('⚠️ 瀏覽器擋咗彈出視窗，請容許本站開彈窗之後再撳一次。', 'error');
+            announce('彈出視窗被封鎖，未開到預覽。');
+          }
+        }
+        // blob 已經交咗俾新 tab／下載，等佢讀完先釋放
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      }, fail).then(restore);
+    }
+
+    /** 每個檔案嘅動作掣：圖片 → 預覽；其他 → 純文字檢視 + 下載 */
+    function assetButtonsMarkup(key, name, kind) {
+      if (!key) return '';
+      var attrs = ' data-key="' + escapeHtml(key) + '" data-name="' + escapeHtml(name) + '"';
+      if (kind === 'image') {
+        return '<button class="btn btn-primary btn-sm" type="button" data-preview="1"' + attrs + '>👁 預覽</button>';
+      }
+      return '<button class="btn btn-ghost btn-sm" type="button" data-viewtext="1"' + attrs + '>👁 檢視（純文字）</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" data-download="1"' + attrs + '>⬇ 下載</button>';
+    }
+
+    function bindAssetActions(scope) {
+      if (!scope) return;
+      Array.prototype.forEach.call(scope.querySelectorAll('[data-preview]'), function (btn) {
+        btn.addEventListener('click', function () {
+          openRawAsset(btn.getAttribute('data-key'), btn.getAttribute('data-name'), 'image-preview', btn);
+        });
+      });
+      Array.prototype.forEach.call(scope.querySelectorAll('[data-viewtext]'), function (btn) {
+        btn.addEventListener('click', function () {
+          openRawAsset(btn.getAttribute('data-key'), btn.getAttribute('data-name'), 'text-view', btn);
+        });
+      });
+      Array.prototype.forEach.call(scope.querySelectorAll('[data-download]'), function (btn) {
+        btn.addEventListener('click', function () {
+          openRawAsset(btn.getAttribute('data-key'), btn.getAttribute('data-name'), 'download', btn);
+        });
+      });
+    }
+
+    /* ============================ 最近上傳 ============================ */
+    function loadRecent() {
+      var token = tokenOrEmpty();
+      if (!token) {
+        recentState = { kind: 'no-token' };
+        renderRecent();
+        return;
+      }
+      recentState = { kind: 'loading' };
+      renderRecent();
+      fetch('/api/list?limit=' + RECENT_LIMIT, {
+        method: 'GET',
+        headers: { 'x-upload-token': token },
+        cache: 'no-store'
+      }).then(function (res) {
+        return res.text().then(function (text) {
+          return { status: res.status, payload: parseJson(text), raw: text, contentType: res.headers.get('content-type') || '' };
+        });
+      }).then(function (r) {
+        if (r.status === 401) {
+          recentState = { kind: 'error', message: 'Token 唔啱或者過期（HTTP 401）。請喺上面更新 UPLOAD_TOKEN 後再試。' };
+        } else if (r.status !== 200) {
+          recentState = { kind: 'error', message: '伺服器回 HTTP ' + r.status + '，載入唔到清單。' };
+        } else if (!r.payload || r.payload.ok !== true || !Array.isArray(r.payload.files)) {
+          recentState = {
+            kind: 'error',
+            message: '伺服器回應唔係預期嘅 JSON（HTTP 200，Content-Type: ' + (r.contentType || '未知') +
+              '）。可能 /api/list 未部署，或者畀 Pages 首頁 fallback 接咗。'
+          };
+        } else {
+          // contract：新到舊。前端再按 uploadedAt 排一次（穩定排序），防止伺服器次序有變。
+          var files = r.payload.files.slice(0, RECENT_LIMIT);
+          files.sort(function (a, b) {
+            var ta = Date.parse(a && a.uploadedAt);
+            var tb = Date.parse(b && b.uploadedAt);
+            if (isNaN(ta) || isNaN(tb)) return 0;
+            return tb - ta;
+          });
+          recentState = { kind: 'ok', files: files };
+        }
+        renderRecent();
+      }).catch(function (err) {
+        recentState = { kind: 'error', message: '載入清單失敗：' + (err && err.message ? err.message : '網絡錯誤') };
+        renderRecent();
+      });
+    }
+
+    /* 首次填入 Token 時，清單仍然係「未載入」狀態 → 即刻幫用戶載入 */
+    function loadRecentIfIdle(alsoRetryOnError) {
+      if (!tokenOrEmpty()) return;
+      if (recentState.kind === 'no-token') { loadRecent(); return; }
+      if (alsoRetryOnError && recentState.kind === 'error') loadRecent();
+    }
+
+    function renderRecent() {
+      var box = els.recentContainer;
+      if (!box) return;
+
+      if (recentState.kind === 'loading') {
+        box.innerHTML = '<div class="state-box is-loading"><span class="spinner" aria-hidden="true"></span>載入最近上傳…</div>';
+        return;
+      }
+      if (recentState.kind === 'no-token') {
+        box.innerHTML = '<div class="state-box">🔑 未填 Token，未載入清單。填好 UPLOAD_TOKEN 就會自動顯示最近 20 個檔案。</div>';
+        return;
+      }
+      if (recentState.kind === 'error') {
+        box.innerHTML = '<div class="state-box is-error" role="alert">⚠️ ' + escapeHtml(recentState.message) +
+          '<div style="margin-top:10px;"><button class="btn btn-ghost btn-sm" type="button" id="recent-retry">再試一次</button></div></div>';
+        var retry = $('recent-retry');
+        if (retry) retry.addEventListener('click', loadRecent);
+        return;
+      }
+      if (!recentState.files.length) {
+        box.innerHTML = '<div class="state-box">📭 暫時未有上傳紀錄。揀返上面嘅檔案上傳，就會喺呢度見到。</div>';
+        return;
+      }
+
+      var rows = recentState.files.map(function (f) {
+        var url = f.url || rawUrl(f.key);
+        var name = f.name || f.key;
+        var kind = assetKind(name);
+        return '<li class="recent-row">' +
+          '<div class="recent-main">' +
+            '<div class="recent-name">' + escapeHtml(name) + '</div>' +
+            '<div class="recent-meta">' + escapeHtml(fmtSize(f.size)) + ' · ' + escapeHtml(fmtTime(f.uploadedAt)) +
+              ' · ' + (kind === 'image' ? '可預覽' : '只可下載／純文字檢視') + '</div>' +
+          '</div>' +
+          '<div class="recent-actions">' +
+            assetButtonsMarkup(f.key, name, kind) +
+            '<button class="btn btn-ghost btn-sm" type="button" data-copy="' + escapeHtml(url) + '">📋 複製</button>' +
+            '<button class="btn btn-ghost btn-sm" type="button" data-delete="' + escapeHtml(f.key) + '">🗑️ 刪除</button>' +
+          '</div>' +
+        '</li>';
+      }).join('');
+
+      box.innerHTML = '<ul class="recent-list">' + rows + '</ul>';
+
+      Array.prototype.forEach.call(box.querySelectorAll('[data-copy]'), function (btn) {
+        btn.addEventListener('click', function () { copyText(btn.getAttribute('data-copy'), btn); });
+      });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-delete]'), function (btn) {
+        btn.addEventListener('click', function () { askDelete(btn); });
+      });
+      bindAssetActions(box);
+    }
+
+    /* 兩步確認刪除（唔用 blocking confirm，鍵盤都可以操作） */
+    function askDelete(btn) {
+      var key = btn.getAttribute('data-delete');
+      if (btn.getAttribute('data-armed') === '1') {
+        deleteFile(key, btn);
+        return;
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('[data-armed="1"]'), function (other) {
+        other.setAttribute('data-armed', '0');
+        other.textContent = '🗑️ 刪除';
+      });
+      btn.setAttribute('data-armed', '1');
+      btn.textContent = '確定刪除？';
+      setStatus('再按一次「確定刪除？」就會刪除：' + key, 'warn');
+    }
+
+    function deleteFile(key, btn) {
+      var token = tokenOrEmpty();
+      if (!token) {
+        setStatus('未填 Token，唔可以刪除。', 'error');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '刪除中…';
+      fetch('/api/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-upload-token': token },
+        body: JSON.stringify({ key: key, token: token }),
+        cache: 'no-store'
+      }).then(function (res) {
+        return res.text().then(function (text) { return { status: res.status, payload: parseJson(text) }; });
+      }).then(function (r) {
+        if (r.status === 200 && r.payload && r.payload.ok) {
+          setStatus('🗑️ 已刪除 ' + key, 'ok');
+          announce('已刪除 ' + key);
+          loadRecent();
+        } else {
+          var code = (r.payload && r.payload.error) ? String(r.payload.error) : ('http_' + r.status);
+          btn.disabled = false;
+          btn.setAttribute('data-armed', '0');
+          btn.textContent = '🗑️ 刪除';
+          setStatus('刪除失敗（' + code + '）：' + describeError(r.payload && r.payload.error, r.status, r.payload, '', 'delete'), 'error');
+        }
+      }).catch(function (err) {
+        btn.disabled = false;
+        btn.setAttribute('data-armed', '0');
+        btn.textContent = '🗑️ 刪除';
+        setStatus('刪除失敗：' + (err && err.message ? err.message : '網絡錯誤'), 'error');
+      });
+    }
+
+    /* ============================ 主題 ============================ */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      if (els.themeIcon) els.themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    function initTheme() {
+      var saved = null;
+      try { saved = localStorage.getItem(THEME_STORAGE_KEY); } catch (e) { saved = null; }
+      var prefersDark = false;
+      try { prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { prefersDark = false; }
+      applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+    }
+
+    function toggleTheme() {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (e) { /* 忽略 */ }
+    }
+
+    /* ============================ 拖拉 ============================ */
+    function initDropzone() {
+      var dz = els.dropzone;
+      if (!dz) return;
+      var depth = 0;
+
+      ['dragenter', 'dragover'].forEach(function (type) {
+        dz.addEventListener(type, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (type === 'dragenter') depth += 1;
+          dz.classList.add('is-dragging');
+        });
+      });
+
+      ['dragleave', 'dragend'].forEach(function (type) {
+        dz.addEventListener(type, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          depth = Math.max(0, depth - 1);
+          if (depth === 0) dz.classList.remove('is-dragging');
+        });
+      });
+
+      dz.addEventListener('drop', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        depth = 0;
+        dz.classList.remove('is-dragging');
+        var dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length) addFiles(dt.files);
+        else setStatus('睇唔到拖拉嘅檔案（可能係連結或者資料夾），請用點擊揀檔。', 'warn');
+      });
+
+      // 防止誤拖檔案令瀏覽器直接開檔
+      ['dragover', 'drop'].forEach(function (type) {
+        window.addEventListener(type, function (e) {
+          if (!dz.contains(e.target)) e.preventDefault();
+        });
+      });
+    }
+
+    /* ============================ 初始化 ============================ */
+    function init() {
+      els = {
+        tokenInput: $('token-input'),
+        tokenReveal: $('token-reveal'),
+        tokenClear: $('token-clear'),
+        tokenHint: $('token-hint'),
+        dropzone: $('dropzone'),
+        fileInput: $('file-input'),
+        queue: $('queue'),
+        queueEmpty: $('queue-empty'),
+        uploadBtn: $('upload-btn'),
+        clearBtn: $('clear-btn'),
+        statusLine: $('status-line'),
+        recentContainer: $('recent-container'),
+        recentRefresh: $('recent-refresh'),
+        themeToggle: $('theme-toggle'),
+        themeIcon: $('theme-icon'),
+        srLive: $('sr-live')
+      };
+
+      initTheme();
+
+      // Token：載入 → 即時儲存
+      var savedToken = tokenOrEmpty();
+      if (els.tokenInput) {
+        els.tokenInput.value = savedToken;
+        els.tokenInput.addEventListener('input', function () {
+          saveToken(els.tokenInput.value.trim());
+          updateTokenUI(false);
+          loadRecentIfIdle(false);
+        });
+        els.tokenInput.addEventListener('blur', function () {
+          saveToken(els.tokenInput.value.trim());
+          updateTokenUI(false);
+          loadRecentIfIdle(true);
+        });
+        els.tokenInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveToken(els.tokenInput.value.trim());
+            updateTokenUI(!els.tokenInput.value.trim());
+            loadRecent();
+          }
+        });
+      }
+
+      if (els.tokenReveal) {
+        els.tokenReveal.addEventListener('click', function () {
+          var showing = els.tokenInput.type === 'text';
+          els.tokenInput.type = showing ? 'password' : 'text';
+          els.tokenReveal.textContent = showing ? '顯示' : '隱藏';
+          els.tokenReveal.setAttribute('aria-pressed', showing ? 'false' : 'true');
+          els.tokenReveal.setAttribute('aria-label', showing ? '顯示 Token' : '隱藏 Token');
+          els.tokenInput.focus();
+        });
+      }
+
+      if (els.tokenClear) {
+        els.tokenClear.addEventListener('click', function () {
+          if (els.tokenInput) els.tokenInput.value = '';
+          saveToken('');
+          updateTokenUI(true);
+          setStatus('已清除本機儲存嘅 Token。', 'warn');
+          recentState = { kind: 'no-token' };
+          renderRecent();
+          announce('已清除 Token。');
+        });
+      }
+
+      if (els.fileInput) {
+        els.fileInput.addEventListener('change', function () {
+          addFiles(els.fileInput.files);
+          els.fileInput.value = ''; // 容許同一個檔案再次揀選
+        });
+      }
+
+      if (els.uploadBtn) els.uploadBtn.addEventListener('click', uploadAll);
+
+      if (els.clearBtn) {
+        els.clearBtn.addEventListener('click', function () {
+          if (isUploading) return;
+          queue = [];
+          renderQueue();
+          setStatus('已清空清單。', null);
+          announce('已清空清單。');
+        });
+      }
+
+      if (els.recentRefresh) els.recentRefresh.addEventListener('click', loadRecent);
+      if (els.themeToggle) els.themeToggle.addEventListener('click', toggleTheme);
+
+      initDropzone();
+      renderQueue();
+      updateTokenUI(false);
+      loadRecent();
+
+      if (!savedToken) setStatus('提示：請先填 UPLOAD_TOKEN，再揀檔案上傳。', 'warn');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>

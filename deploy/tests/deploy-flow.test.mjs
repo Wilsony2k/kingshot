@@ -18,7 +18,7 @@
 import http from 'node:http';
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -239,7 +239,7 @@ function validateDeploymentConfigs(body) {
 }
 
 /* ===================== 專案 fixture ===================== */
-function projectFixture({ source = 'direct_upload', domain = 'avgkingshot.85200852.xyz', name = 'avgkingshot', shape = 'dict' } = {}) {
+function projectFixture({ source = 'direct_upload', domain = 'avgkingshot.85200852.xyz', name = 'avgkingshot', shape = 'dict', productionBranch = 'main' } = {}) {
   return {
     name,
     id: 'proj-1',
@@ -249,6 +249,7 @@ function projectFixture({ source = 'direct_upload', domain = 'avgkingshot.852008
       : source === 'direct_upload' ? { type: 'direct_upload' }
       : { type: 'github', config: { owner: 'Wilsony2k', repo_name: 'kingshot', production_branch: 'main', build_command: '', destination_dir: 'docs/events' } },
     latest_deployment: { created_on: '2026-09-29T06:00:00Z' },
+    production_branch: productionBranch,
     deployment_configs: {
       // 真 CF Pages API 嘅形狀：bindings 係 dict（key = binding 名），唔係 array（已用真 API 核實）
       production: shape === 'list'
@@ -269,7 +270,7 @@ function projectFixture({ source = 'direct_upload', domain = 'avgkingshot.852008
 
 /* ===================== 跑 deploy.sh ===================== */
 // 一定要用 async spawn：spawnSync 會阻塞 parent event loop，mock server 就回應唔到 child 嘅 HTTP request（死鎖）
-function runDeploy({ args = [], extraEnv = {}, dropEnv = ['CLOUDFLARE_API_TOKEN', 'UPLOAD_TOKEN'], timeout = 300000 } = {}) {
+function runDeploy({ args = [], extraEnv = {}, dropEnv = ['CLOUDFLARE_API_TOKEN', 'UPLOAD_TOKEN'], timeout = 300000, cwd = REPO, script = DEPLOY_SH } = {}) {
   const env = { ...process.env };
   for (const k of Object.keys(env)) {
     if (k.startsWith('CF_') || k === 'SITE_BASE' || k.startsWith('UPLOAD_') || k.startsWith('npm_config_') || k === 'HOME') delete env[k];
@@ -279,7 +280,7 @@ function runDeploy({ args = [], extraEnv = {}, dropEnv = ['CLOUDFLARE_API_TOKEN'
   env.CI = '1';
   env.WRANGLER_SEND_METRICS = 'false';
   return new Promise((resolve) => {
-    const child = spawn('bash', [DEPLOY_SH, ...args], { cwd: REPO, env });
+    const child = spawn('bash', [script, ...args], { cwd, env });
     let out = '';
     let err = '';
     let settled = false;
@@ -661,6 +662,16 @@ console.log('\n[7] 全流程（非 dry-run）：走到 wrangler，用假 token �
   contains('7e 仍然行到 wrangler', r5.out, 'npx --yes wrangler@latest pages deploy');
   notContains('7e 唔會爆 EROFS', r5.out, 'EROFS');
   await mock2.close();
+
+  // 7f：production_branch 唔一致要中止（否則會部署成 preview 而唔係 production）
+  const mock3 = startMock({ projects: [projectFixture({ productionBranch: 'develop' })], r2Buckets: [{ name: 'kingshot-uploads' }] });
+  const s3 = await mock3.ready;
+  const r6 = await runDeploy({ args: ['--no-verify'], timeout: 180000,
+    extraEnv: { ...envBase, CF_API_BASE: `http://127.0.0.1:${s3.port}/client/v4` } });
+  check('7f production_branch 唔一致 → exit 1', r6.code === 1, `→ ${r6.code}`);
+  contains('7f 錯誤訊息清楚', r6.out, 'production_branch 唔一致');
+  notContains('7f 護欄先擋住（未行到 wrangler deploy）', r6.out, 'pages deploy .deploy-stage');
+  await mock3.close();
 }
 
 }
@@ -689,6 +700,19 @@ console.log('\n[9] staged 部署目錄（唔可以推未提交改動）');
   } else {
     console.log('  ⏭️  9b 略過「!= 工作樹」：該檔目前冇未提交改動');
   }
+  // 9b2：stage 內每一個 tracked 檔都要同 git show HEAD: 完全一樣（逐個 byte 比）
+  {
+    const tracked = gitArgs(['ls-tree', '-r', '--name-only', 'HEAD', '--', 'docs/events']).toString().trim().split('\n').filter(Boolean);
+    const mismatched = [];
+    for (const tp of tracked) {
+      const rel = tp.replace(/^docs\/events\//, '');
+      const hp = join(site, rel);
+      if (!existsSync(hp)) { mismatched.push(rel + '(缺失)'); continue; }
+      if (sha(readFileSync(hp)) !== sha(gitArgs(['show', `HEAD:${tp}`]))) mismatched.push(rel);
+    }
+    check(`9b2 stage 內 ${tracked.length} 個 tracked 檔全部 == HEAD（逐個 byte 比）`,
+      mismatched.length === 0, `→ 唔同：${mismatched.join(', ')}`);
+  }
   check('9c 新檔 upload.html 有入 stage', existsSync(join(site, 'upload.html')), '→ 冇 upload.html');
   check('9c HEAD 子目錄 guides/ 有入 stage', existsSync(join(site, 'guides', 'strongest-lord.md')), '→ 冇 guides/');
   // wrangler 用 path.join(process.cwd(), "functions") 解 Functions 目錄 → 由 repo root 執行就得
@@ -699,21 +723,68 @@ console.log('\n[9] staged 部署目錄（唔可以推未提交改動）');
     r.out, `cd ${REPO} && npx --yes wrangler@latest pages deploy .deploy-stage/site`);
   contains('9e 有 pre-flight 編譯 functions', r.out, 'functions 編譯成功');
 
-  // 9f --full-tree 係工作樹版本
+  // 9f --full-tree 係獨立模式：直接部署 docs/events，唔可以污染 .deploy-stage/
+  const stageBefore = sha(readFileSync(join(site, 'server-2355-calendar.js')));
   const r2 = await runDeploy({ args: ['--dry-run', '--full-tree'], extraEnv: extra });
   check('9f --full-tree exit 0', r2.code === 0, `→ ${r2.code}`);
   contains('9f --full-tree 有警告', r2.out, '--full-tree');
-  if (isDirty) {
-    // 即時重讀工作樹（唔用開頭讀落嘅 workJs），避免中間有並行改動造成假失敗
-    const workJsNow = readFileSync(join(REPO, 'docs', 'events', 'server-2355-calendar.js'));
-    check('9f --full-tree 用工作樹版本', sha(readFileSync(join(site, 'server-2355-calendar.js'))) === sha(workJsNow), '→ 唔係工作樹版本');
-  }
+  contains('9f --full-tree 部署 docs/events（唔係 stage）', r2.out, 'pages deploy docs/events');
+  check('9f --full-tree 完全冇改 stage（唔會污染）',
+    sha(readFileSync(join(site, 'server-2355-calendar.js'))) === stageBefore, '→ stage 被 --full-tree 污染咗');
+  check('9f --full-tree 之後 stage 仍然 == HEAD',
+    sha(readFileSync(join(site, 'server-2355-calendar.js'))) === sha(headJs), '→ 唔係 HEAD');
 
   // 9h 收尾：再跑一次預設 dry-run，令留低嘅 .deploy-stage 係「預設 staged」狀態（唔會誤導之後檢查）
   const r3 = await runDeploy({ args: ['--dry-run'], extraEnv: extra });
   check('9h 收尾 exit 0', r3.code === 0, `→ ${r3.code}`);
   check('9h 收尾後 stage 回復 HEAD 版本',
     sha(readFileSync(join(site, 'server-2355-calendar.js'))) === sha(headJs), '→ 唔係 HEAD 版本');
+
+  // 9i：獨立 temp git repo 回歸 —— 有未提交改動時，stage 必須 == HEAD、唔可以 == 工作樹
+  {
+    const tmpRepo = mkdtempSync(join(tmpdir(), 'kz-stage-repo-'));
+    mkdirSync(join(tmpRepo, 'deploy'), { recursive: true });
+    mkdirSync(join(tmpRepo, 'functions', 'api'), { recursive: true });
+    mkdirSync(join(tmpRepo, 'docs', 'events', 'guides'), { recursive: true });
+    copyFileSync(DEPLOY_SH, join(tmpRepo, 'deploy', 'deploy.sh'));
+    writeFileSync(join(tmpRepo, 'functions', 'api', 'x.js'), 'export async function onRequest(){return new Response("ok")}\n');
+    writeFileSync(join(tmpRepo, 'docs', 'events', 'index.html'), 'HEAD-index\n');
+    writeFileSync(join(tmpRepo, 'docs', 'events', 'app.js'), 'HEAD-app\n');
+    writeFileSync(join(tmpRepo, 'docs', 'events', 'guides', 'a.md'), 'HEAD-guide\n');
+    const tg = (a) => execFileSync('git', ['-C', tmpRepo, ...a]);
+    tg(['init', '-q', '-b', 'main']);
+    tg(['add', '-A']);
+    execFileSync('git', ['-C', tmpRepo, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'init']);
+    // 造未提交改動（模擬 Wilson 嗰兩個 calendar 檔）
+    writeFileSync(join(tmpRepo, 'docs', 'events', 'app.js'), 'WORKTREE-app-DIRTY\n');
+    writeFileSync(join(tmpRepo, 'docs', 'events', 'guides', 'a.md'), 'WORKTREE-guide-DIRTY\n');
+
+    const mockT = startMock({ projects: [projectFixture({ name: 'reproj' })] });
+    const stT = await mockT.ready;
+    const tmpEnv = { ...envBase, CF_API_BASE: `http://127.0.0.1:${stT.port}/client/v4` };
+    const tmpScript = join(tmpRepo, 'deploy', 'deploy.sh');
+    const rT = await runDeploy({ args: ['--dry-run'], cwd: tmpRepo, script: tmpScript, extraEnv: tmpEnv });
+    check('9i 有未提交改動時 dry-run exit 0', rT.code === 0, `→ ${rT.code}`);
+    contains('9i 有印自我核對', rT.out, 'stage 自我核對');
+    const stagedApp = readFileSync(join(tmpRepo, '.deploy-stage', 'site', 'app.js'), 'utf8');
+    check('9i stage app.js == HEAD 內容', stagedApp === 'HEAD-app\n', `→ ${JSON.stringify(stagedApp)}`);
+    check('9i stage app.js != 工作樹（未提交改動冇入 stage）', stagedApp !== 'WORKTREE-app-DIRTY\n', '→ 竟然係工作樹版本');
+    const bad = [];
+    const tracked = tg(['ls-tree', '-r', '--name-only', 'HEAD', '--', 'docs/events']).toString().trim().split('\n').filter(Boolean);
+    for (const tp of tracked) {
+      const rel = tp.replace(/^docs\/events\//, '');
+      if (sha(readFileSync(join(tmpRepo, '.deploy-stage', 'site', rel))) !== sha(tg(['show', `HEAD:${tp}`]))) bad.push(rel);
+    }
+    check(`9i stage 每個 tracked 檔（${tracked.length} 個）byte 相同於 HEAD`, bad.length === 0, `→ 唔同：${bad.join(', ')}`);
+
+    const before = sha(readFileSync(join(tmpRepo, '.deploy-stage', 'site', 'app.js')));
+    const rFT = await runDeploy({ args: ['--dry-run', '--full-tree'], cwd: tmpRepo, script: tmpScript, extraEnv: tmpEnv });
+    check('9j --full-tree exit 0', rFT.code === 0, `→ ${rFT.code}`);
+    contains('9j --full-tree 部署 docs/events', rFT.out, 'pages deploy docs/events');
+    check('9j --full-tree 冇污染 stage', sha(readFileSync(join(tmpRepo, '.deploy-stage', 'site', 'app.js'))) === before, '→ stage 被污染');
+    rmSync(tmpRepo, { recursive: true, force: true });
+    await mockT.close();
+  }
 
   // 9g 回歸：列 Pages 專案唔可以帶 per_page（Evelyn 真 token 撞到 HTTP 400 / 8000024）
   check('9g 有 GET /pages/projects 而且唔帶 query',

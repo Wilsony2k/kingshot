@@ -62,6 +62,7 @@ STAGE_SITE_NAME="site"
 # wrangler 係用 path.join(process.cwd(), "functions") 解 Functions 目錄（唔係用部署目錄！），
 # 所以部署時 cwd 一定要係 repo root，functions/ 就會自動跟埋上，唔需要 copy 或 symlink。
 STAGE_DEPLOY_DIR_REL=".deploy-stage/${STAGE_SITE_NAME}"
+DEPLOY_DIR_REL=""                      # 真正傳俾 wrangler 嘅目錄（staged 或 --full-tree 各自唔同）
 
 # ⚠️ 一定要先記住 caller 經環境變數傳入嘅 UPLOAD_TOKEN：下面為咗 set -u 安全會初始化同名全域變數，
 # 如果唔記低，`UPLOAD_TOKEN=""` 就會清空環境變數，變成靜靜改用 deploy/.upload-token（實測踩過呢個坑）。
@@ -387,6 +388,7 @@ if src.get("config"):
 print("  自訂網域    : %s" % (", ".join(p.get("domains") or []) or "（冇）"))
 print("  子網域      : %s" % (p.get("subdomain","（冇）")))
 print("  最近部署    : %s" % ((p.get("latest_deployment") or {}).get("created_on","（冇）")))
+print("  生產分支    : %s（--branch 一定要用呢個，否則會部署成 preview）" % (p.get("production_branch") or "（API 冇提供）"))
 BIND_KEYS=("kv_namespaces","r2_buckets","d1_databases","durable_object_namespaces",
            "hyperdrive","services","queues","vectorize","analytics_engine_datasets",
            "ai","browser","images")
@@ -706,35 +708,52 @@ build_stage() {
   mkdir -p "$site"
   local n_head=0 n_new=0 p rel
 
-  if [ "$FULL_TREE" -eq 1 ]; then
-    warn "--full-tree：直接部署工作樹 ${PAGES_DIR}（含未提交改動，請確認你知後果）"
-    ( cd "$REPO_ROOT" && cp -a "${PAGES_DIR}/." "$site/" )
-    n_new="$(find "$site" -type f | wc -l | tr -d ' ')"
-  else
-    # 1) tracked 檔案 → 一律 HEAD 版本
-    while IFS= read -r p; do
-      [ -n "$p" ] || continue
-      rel="${p#${PAGES_DIR}/}"
-      mkdir -p "$site/$(dirname "$rel")"
-      "${GIT[@]}" show "HEAD:$p" > "$site/$rel"
-      n_head=$((n_head + 1))
-    done < <("${GIT[@]}" ls-tree -r --name-only HEAD -- "$PAGES_DIR")
-    # 2) 未 tracked（未 ignore）嘅新檔案 → 用工作樹版本（例如新加嘅 upload.html）
-    while IFS= read -r p; do
-      [ -n "$p" ] || continue
-      rel="${p#${PAGES_DIR}/}"
-      mkdir -p "$site/$(dirname "$rel")"
-      cp -a "$REPO_ROOT/$p" "$site/$rel"
-      n_new=$((n_new + 1))
-    done < <("${GIT[@]}" ls-files --others --exclude-standard -- "$PAGES_DIR")
-    # 3) 講清楚邊啲未提交改動今次「唔會」上線
-    local dirty
-    dirty="$("${GIT[@]}" status --porcelain --untracked-files=no -- "$PAGES_DIR" | awk '{print $NF}')"
-    if [ -n "$dirty" ]; then
-      echo "ℹ️  以下檔案有未提交改動，今次會用 HEAD 版本（唔會上線）："
-      printf '%s\n' "$dirty" | sed 's/^/      /'
-    fi
+  # 1) tracked 檔案 → 一律 `git show HEAD:<path>`（唯一來源，唔可以有其他版本混入）
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    rel="${p#${PAGES_DIR}/}"
+    mkdir -p "$site/$(dirname "$rel")"
+    "${GIT[@]}" show "HEAD:$p" > "$site/$rel"
+    n_head=$((n_head + 1))
+  done < <("${GIT[@]}" ls-tree -r --name-only HEAD -- "$PAGES_DIR")
+  # 2) 未 tracked（未 ignore）嘅新檔案 → 用工作樹版本（例如新加嘅 upload.html）
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    rel="${p#${PAGES_DIR}/}"
+    mkdir -p "$site/$(dirname "$rel")"
+    cp -a "$REPO_ROOT/$p" "$site/$rel"
+    n_new=$((n_new + 1))
+  done < <("${GIT[@]}" ls-files --others --exclude-standard -- "$PAGES_DIR")
+  # 3) 講清楚邊啲未提交改動今次「唔會」上線
+  local dirty
+  dirty="$("${GIT[@]}" status --porcelain --untracked-files=no -- "$PAGES_DIR" | awk '{print $NF}')"
+  if [ -n "$dirty" ]; then
+    echo "ℹ️  以下檔案有未提交改動，今次會用 HEAD 版本（唔會上線）："
+    printf '%s\n' "$dirty" | sed 's/^/      /'
   fi
+
+  # 4) 【硬性自我核對】stage 每個 tracked 檔一定要同 git show HEAD:<path> byte 相同，
+  #    唔係就中止 —— 呢個就係防止「未提交改動被推上線」嘅最後防線。順便印 hash 對照。
+  local -a bad=()
+  local checked=0
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    rel="${p#${PAGES_DIR}/}"
+    checked=$((checked + 1))
+    if cmp -s "$site/$rel" <("${GIT[@]}" show "HEAD:$p"); then
+      printf '      ✓ %-44s stage=%s HEAD=%s\n' "$rel" \
+        "$(sha256_file "$site/$rel" | cut -c1-12)" "$("${GIT[@]}" show "HEAD:$p" | sha256sum | cut -c1-12)"
+    else
+      printf '      ❌ %-44s stage=%s HEAD=%s\n' "$rel" \
+        "$(sha256_file "$site/$rel" | cut -c1-12)" "$("${GIT[@]}" show "HEAD:$p" | sha256sum | cut -c1-12)" >&2
+      bad+=("$rel")
+    fi
+  done < <("${GIT[@]}" ls-tree -r --name-only HEAD -- "$PAGES_DIR")
+  if [ "${#bad[@]}" -gt 0 ]; then
+    echo "❌ stage 有 ${#bad[@]} 個 tracked 檔唔係 HEAD 版本：${bad[*]}" >&2
+    die "拒絕部署（避免將未提交改動推上線）；請重跑一次（stage 每次都會重建）"
+  fi
+  ok "stage 自我核對：${checked}/${checked} 個 tracked 檔同 git show HEAD:… byte 相同（cmp）"
 
   # 4) functions 唔放喺 stage：wrangler 由 cwd（部署時 = repo root）嘅 functions/ 攞，
   #    所以 stage 內一定要冇 functions/，否則會連源碼一齊當靜態檔上傳。
@@ -746,6 +765,34 @@ build_stage() {
 
 # pre-flight：由 stage root 編譯 functions。呢一步係本地動作（唔會掂 production），
 # 但可以喺部署之前就證明 wrangler 喺呢個 cwd 搵得到 functions/，避免推出一個冇 API 嘅站。
+# --branch 一定要等於專案嘅 production_branch，否則 wrangler 只會出 preview deployment（唔會上 production）。
+check_production_branch() {
+  local api_branch
+  api_branch="$(printf '%s' "$PROJECT_JSON" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("result",{}).get("production_branch") or "")')"
+  if [ -z "$api_branch" ]; then
+    warn "專案 API 冇 production_branch 欄位 → 唔可以自動核對；今次會用 --branch ${PROD_BRANCH}"
+    return 0
+  fi
+  if [ "$api_branch" != "$PROD_BRANCH" ]; then
+    die "production_branch 唔一致：專案係 '${api_branch}'，今次用 '${PROD_BRANCH}' → 會部署成 preview 而唔係 production！請用 CF_PAGES_BRANCH='${api_branch}' 再跑"
+  fi
+  ok "production branch 核對通過：'${api_branch}'（同 --branch 一致，會上 production）"
+}
+
+# 決定今次部署邊個目錄：
+#   staged（預設）：砌 .deploy-stage/site（全部 HEAD 版本 + 新檔），wrangler 由 repo root 部署佢
+#   --full-tree    ：直接部署 docs/events（工作樹原樣），完全唔會寫入 .deploy-stage/
+prepare_deploy_dir() {
+  if [ "$FULL_TREE" -eq 1 ]; then
+    warn "--full-tree：直接部署工作樹 ${PAGES_DIR}（含未提交改動）→ 唔會寫入 ${STAGE_ROOT}"
+    DEPLOY_DIR_REL="$PAGES_DIR"
+    ok "部署目錄（--full-tree）：${REPO_ROOT}/${PAGES_DIR}"
+    return 0
+  fi
+  build_stage
+  DEPLOY_DIR_REL="$STAGE_DEPLOY_DIR_REL"
+}
+
 preflight_functions() {
   info "pre-flight：由 repo root 編譯 functions（wrangler 用 cwd/functions 解析，確認搵得到）"
   local out="$TMP_DIR/fn-build" attempt
@@ -779,17 +826,18 @@ deploy_pages() {
     warn "dashboard 會多一個 Direct Upload deployment。如果想保持純 git 流程，請用 git push 取代呢步。"
   fi
 
-  build_stage
+  check_production_branch
+  prepare_deploy_dir
   preflight_functions
 
   echo
   info "部署（cwd = repo root，functions 由 cwd/functions 攞）："
-  info "  cd ${REPO_ROOT} && npx --yes wrangler@latest pages deploy ${STAGE_DEPLOY_DIR_REL} --project-name ${PROJ} --branch ${PROD_BRANCH} --commit-dirty=true"
+  info "  cd ${REPO_ROOT} && npx --yes wrangler@latest pages deploy ${DEPLOY_DIR_REL} --project-name ${PROJ} --branch ${PROD_BRANCH} --commit-dirty=true"
   info "wrangler 環境：npm_config_cache=${REPO_ROOT}/.npm-cache、XDG_CONFIG_HOME=${REPO_ROOT}/.config-home、WRANGLER_LOG_PATH=${REPO_ROOT}/.wrangler-logs（token 唔會顯示）"
 
   if ! ( cd "$REPO_ROOT" && env "${WR_ENV[@]}" \
           CLOUDFLARE_API_TOKEN="$CF_TOKEN" CLOUDFLARE_ACCOUNT_ID="$ACC" \
-          npx --yes wrangler@latest pages deploy "$STAGE_DEPLOY_DIR_REL" \
+          npx --yes wrangler@latest pages deploy "$DEPLOY_DIR_REL" \
             --project-name "$PROJ" --branch "$PROD_BRANCH" --commit-dirty=true ) 2>&1 | tee "$TMP_DIR/wrangler.log"; then
     die "wrangler 部署失敗（睇上面輸出）"
   fi
@@ -1046,10 +1094,10 @@ main() {
   if [ "$DRY_RUN" -eq 1 ]; then
     echo
     info "（dry-run）準備 staged 部署目錄（只喺本機寫 .deploy-stage/，唔會部署）"
-    build_stage
+    prepare_deploy_dir
     preflight_functions
     echo "（dry-run）真正部署時會執行："
-    echo "      cd ${REPO_ROOT} && npx --yes wrangler@latest pages deploy ${STAGE_DEPLOY_DIR_REL} --project-name ${PROJ} --branch ${PROD_BRANCH} --commit-dirty=true"
+    echo "      cd ${REPO_ROOT} && npx --yes wrangler@latest pages deploy ${DEPLOY_DIR_REL} --project-name ${PROJ} --branch ${PROD_BRANCH} --commit-dirty=true"
     echo "      （cwd = repo root ⇒ wrangler 用 cwd/functions 做 Pages Functions，唔需要 copy／symlink）"
     echo
     echo

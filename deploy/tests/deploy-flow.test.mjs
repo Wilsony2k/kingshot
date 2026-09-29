@@ -127,6 +127,8 @@ function startMock(cfg = {}) {
         if (req.method === 'GET') return json({ success: true, result: proj, errors: [], messages: [] });
         if (req.method === 'PATCH') {
           const incoming = JSON.parse(bodyText || '{}');
+          const bad = validateDeploymentConfigs(incoming);
+          if (bad) return json({ success: false, result: null, errors: [bad], messages: [] }, 400);
           state.patches.push(incoming);
           // 模擬 CF：每個 env 嘅 deployment_configs 係整份替換
           for (const [env, dcCfg] of Object.entries(incoming.deployment_configs || {})) {
@@ -198,6 +200,42 @@ function startMock(cfg = {}) {
   state.ready = ready.then((port) => { state.port = port; return state; });
   state.close = () => new Promise((r) => server.close(r));
   return state;
+}
+
+/* ===================== 真 API 形狀驗證（模仿真 CF Pages project API） ===================== */
+// 實測：PATCH deployment_configs 時 KV 一定要 {"<名>": {"namespace_id": "<hex>"}}、
+// R2 一定要 {"<名>": {"name": "<bucket>"}}；用 id／type／bucket_name／純字串 → HTTP 400。
+// mock 一定要同真 API 一樣嚴格，否則「mock 過但真 API 400」嘅問題會再出現。
+function validateDeploymentConfigs(body) {
+  for (const cfg of Object.values(body.deployment_configs || {})) {
+    const kv = cfg.kv_namespaces;
+    if (kv != null) {
+      const entries = Array.isArray(kv) ? kv.map((b) => [b && b.name, b]) : Object.entries(kv);
+      for (const [name, v] of entries) {
+        // 真 API 連純字串都唔收：一定要 object + namespace_id
+        const nid = v && typeof v === 'object' ? v.namespace_id : undefined;
+        if (!name || typeof nid !== 'string' || nid === '') {
+          return { code: 8000000, message: 'Invalid KV namespace ID ()' };
+        }
+      }
+    }
+    const rb = cfg.r2_buckets;
+    if (rb != null) {
+      const entries = Array.isArray(rb) ? rb.map((b) => [b && b.name, b]) : Object.entries(rb);
+      for (const [name, v] of entries) {
+        const bucket = v && typeof v === 'object' ? v.name : undefined;
+        if (!name || typeof bucket !== 'string' || bucket === '') {
+          return { code: 8000000, message: 'Invalid R2 bucket name ()' };
+        }
+      }
+    }
+    for (const [k, v] of Object.entries(cfg.env_vars || {})) {
+      if (!v || typeof v !== 'object' || typeof v.type !== 'string') {
+        return { code: 8000000, message: `Invalid environment variable ${k} ()` };
+      }
+    }
+  }
+  return null;
 }
 
 /* ===================== 專案 fixture ===================== */
@@ -435,6 +473,15 @@ console.log('\n[5] CF_DRY_RUN_APPLY=1：真做 a–g（KV + bindings 合併 + se
   contains('5c11 有印最終 binding 清單', r.out, '最終 bindings');
   contains('5c11 KV binding 列出 id', r.out, 'UPLOADS_KV = namespace_id kv-created-0001');
   contains('5c11 R2 binding 列出 bucket', r.out, 'UPLOADS = bucket kingshot-uploads');
+  // 真 API 只收 namespace_id / name —— 唔可以有 id／type／bucket_name 等 wrangler.toml 形狀
+  const kvEntry = prod.kv_namespaces.UPLOADS_KV;
+  check('5b KV entry 只得 namespace_id（冇 id／type）',
+    JSON.stringify(Object.keys(kvEntry).sort()) === '["namespace_id"]', `→ ${JSON.stringify(kvEntry)}`);
+  const r2Entry = prod.r2_buckets.UPLOADS;
+  check('5c R2 entry 只得 name（冇 bucket_name／type）',
+    JSON.stringify(Object.keys(r2Entry).sort()) === '["name"]', `→ ${JSON.stringify(r2Entry)}`);
+  check('5c 原有 OLD_R2 都係 name 形狀',
+    JSON.stringify(prod.r2_buckets.OLD_R2) === '{"name":"old-bucket"}', `→ ${JSON.stringify(prod.r2_buckets.OLD_R2)}`);
   check('5c 原有 R2 binding 保留', r2Names.includes('OLD_R2'), `→ ${JSON.stringify(prod.r2_buckets)}`);
   check('5c fail_open / usage_model 等原有 key 保留', prod.fail_open === true && prod.usage_model === 'standard', `→ ${JSON.stringify(Object.keys(prod))}`);
   check('5d 原本 vars.FOO 保留', prod.vars && prod.vars.FOO === 'bar', `→ ${JSON.stringify(prod.vars)}`);
@@ -480,6 +527,21 @@ console.log('\n[5] CF_DRY_RUN_APPLY=1：真做 a–g（KV + bindings 合併 + se
   notContains('5f 輸出冇 upload token 值', r.out, UP_TOKEN);
   notContains('5f 輸出冇 CF token 值', r.out, CF_TOKEN);
   contains('5f 有報告原有 bindings 冇缺失', r.out, '原有 bindings/vars 全部保留');
+
+  // 5j：mock 守衛實測 —— 錯形狀真係會 400（唔可以再靜靜放行，否則又會「mock 過真 API 400」）
+  const patchUrl = `http://127.0.0.1:${st.port}/client/v4/accounts/acc-1/pages/projects/avgkingshot`;
+  const patchOnce = (body) => fetch(patchUrl, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const badKv = await patchOnce({ deployment_configs: { production: { kv_namespaces: { UPLOADS_KV: { id: 'x' } } } } });
+  check('5j 錯 KV 形狀（id）→ mock 回 400', badKv.status === 400, `→ ${badKv.status}`);
+  contains('5j KV 錯誤訊息同真 API 一致', JSON.stringify(await badKv.json()), 'Invalid KV namespace ID ()');
+  const badR2 = await patchOnce({ deployment_configs: { production: { r2_buckets: { UPLOADS: { bucket_name: 'x' } } } } });
+  check('5j 錯 R2 形狀（bucket_name）→ mock 回 400', badR2.status === 400, `→ ${badR2.status}`);
+  contains('5j R2 錯誤訊息同真 API 一致', JSON.stringify(await badR2.json()), 'Invalid R2 bucket name ()');
+  const badStr = await patchOnce({ deployment_configs: { production: { kv_namespaces: { UPLOADS_KV: 'kv-id' } } } });
+  check('5j 純字串 KV 形狀 → mock 回 400', badStr.status === 400, `→ ${badStr.status}`);
+  const badType = await patchOnce({ deployment_configs: { production: { kv_namespaces: { UPLOADS_KV: { type: 'kv_namespace', id: 'x' } } } } });
+  check('5j wrangler.toml 形狀（type+id）→ mock 回 400', badType.status === 400, `→ ${badType.status}`);
+
   await mock.close();
 }
 

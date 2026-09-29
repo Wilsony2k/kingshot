@@ -97,7 +97,14 @@ Dashboard → 專案 → **Settings** → **Build configuration**：
 > **⚠️ 用 `deploy/deploy.sh` 部署時唔會直接上傳工作樹**（因為 `wrangler pages deploy` 係直接上傳目錄，會連未提交／未驗證嘅改動一齊推上線）。
 > `deploy.sh` 會先砌一個 **staged 目錄 `.deploy-stage/`**：靜態檔一律用 `git HEAD` 版本（＋未 tracked 嘅新檔，例如 `upload.html`），`functions/` 用工作樹版本，
 > 之後由 **repo root** 跑 `wrangler pages deploy .deploy-stage/site`（wrangler 係用 `path.join(process.cwd(), "functions")` 解 Functions 目錄，所以 cwd = repo root 就自動帶埋 `functions/`，唔需要 symlink；stage 內亦刻意唔放 `functions/`，避免源碼被當靜態檔公開）。想原樣部署工作樹就用 `--full-tree`（會有警告）。
-> API 嘅 binding 形狀注意：真 CF Pages API 嘅 `kv_namespaces` / `r2_buckets` 係 **dict（key = binding 名）**，唔係 array；`deploy.sh` 會保持原有形狀去 PATCH。
+> **API binding 形狀（真 API 實測，錯了會 HTTP 400）** —— PATCH `deployment_configs` 只收呢個形狀，`deploy.sh` 亦只會出呢個形狀：
+> ```jsonc
+> { "kv_namespaces": { "UPLOADS_KV": { "namespace_id": "3e94ca2a19b149c6801122d2b483f0ae" } },
+>   "r2_buckets":    { "UPLOADS":    { "name": "kingshot-uploads" } },
+>   "env_vars":      { "UPLOAD_TOKEN": { "type": "secret_text", "value": "<secret>" } } }
+> ```
+> ❌ 唔收：`{"id": …}`／`{"type":"kv_namespace","id":…}`／純字串（`Invalid KV namespace ID ()`）；`{"bucket_name": …}`／`{"type":"r2_bucket",…}`（`Invalid R2 bucket name ()`）。
+> ⚠️ `wrangler` 內部 JS 用嘅 `type:"kv_namespace" + id` / `type:"r2_bucket" + bucket_name` 係 **wrangler.toml 路徑**嘅形狀，唔可以照抄落 Pages project API。
 
 ---
 
